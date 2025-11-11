@@ -76,6 +76,8 @@ public final class DrawManager {
 
     // Label for back button
     private static final String BACK_LABEL = "< Back";
+    // Label for exit button
+    private static final String EXIT_LABEL = "< Exit";
 
     /** Sprite types. */
     public static enum SpriteType {
@@ -117,7 +119,10 @@ public final class DrawManager {
         ItemHeal,
         ItemTripleShot,
         ItemScoreBooster,
-        ItemBulletSpeedUp
+        ItemBulletSpeedUp,
+
+        /** 레벨 나타내는 틀*/
+        LevelFrame
     };
 
     /**
@@ -158,6 +163,8 @@ public final class DrawManager {
             spriteMap.put(SpriteType.ItemTripleShot, new boolean[5][7]);
             spriteMap.put(SpriteType.ItemScoreBooster, new boolean[5][5]);
             spriteMap.put(SpriteType.ItemBulletSpeedUp, new boolean[5][5]);
+
+            spriteMap.put(SpriteType.LevelFrame, new boolean[38][15]);
 
             fileManager.loadSprite(spriteMap);
             logger.info("Finished loading the sprites.");
@@ -705,6 +712,37 @@ public final class DrawManager {
          * 2 + spacing * 3); */
     }
 
+    /**
+     * @param
+     * */
+    public void drawMap(final Screen screen, final int selectedIndex) {
+        String[] items = {"BOSS", "level 5", "level 4","level 3", "level 2", "level 1"};
+        String titleString = "save earth!";
+        String instructionsString = "Press Space to play, Escape to exit";
+        int idx = 4; // idx를 변수로 받아와서 지정해줘야 합니다!!
+
+        drawExitButton(screen, selectedIndex == 2);
+
+        backBufferGraphics.setColor(Color.GREEN);
+        drawCenteredBigString(screen, titleString, screen.getHeight() / 5);
+
+        Entity levelFrame = new Entity(0, 0, 80*2 + 40, 16*2 + 8, Color.LIGHT_GRAY) {
+            { this.spriteType = SpriteType.LevelFrame ; }
+        } ;
+
+        for ( int i = 0 ; i < items.length ; i ++ ) {
+            if (i > items.length - idx - 1)
+                levelFrame.changeColor(Color.YELLOW);
+
+            drawEntity(levelFrame, screen.getWidth()/2 - (80*2 + 40)/2, 140 + 50 * i ) ;
+            drawCenteredBigString(screen, items[i], 170 + 50 * i );
+        }
+
+        backBufferGraphics.setColor(Color.GRAY);
+        drawCenteredRegularString(screen, instructionsString,
+                screen.getHeight() / 15 * 14);
+    }
+
 	/**
 	 * Draws game results.
 	 *
@@ -1229,6 +1267,16 @@ public final class DrawManager {
         int margin = 12;
         int ascent = fontRegularMetrics.getAscent();
         backBufferGraphics.drawString(BACK_LABEL, margin, margin + ascent);
+    }
+
+    // Draw a "EXIT_LABEL" button at the top-left corner.
+    public void drawExitButton(final Screen screen, final boolean highlighted) {
+        backBufferGraphics.setFont(fontRegular);
+        backBufferGraphics.setColor(Color.WHITE);
+
+        int margin = 12;
+        int ascent = fontRegularMetrics.getAscent();
+        backBufferGraphics.drawString(EXIT_LABEL, margin, margin + ascent);
     }
 
     // add this line
