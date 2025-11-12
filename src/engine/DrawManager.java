@@ -122,7 +122,11 @@ public final class DrawManager {
         ItemBulletSpeedUp,
 
         /** 레벨 나타내는 틀*/
-        LevelFrame
+        LevelFrame,
+
+        Planet1,
+        Planet2,
+        Planet3
     };
 
     /**
@@ -165,6 +169,10 @@ public final class DrawManager {
             spriteMap.put(SpriteType.ItemBulletSpeedUp, new boolean[5][5]);
 
             spriteMap.put(SpriteType.LevelFrame, new boolean[38][15]);
+
+            spriteMap.put(SpriteType.Planet1, new boolean[8][10]);
+            spriteMap.put(SpriteType.Planet2, new boolean[10][10]);
+            spriteMap.put(SpriteType.Planet3, new boolean[17][10]);
 
             fileManager.loadSprite(spriteMap);
             logger.info("Finished loading the sprites.");
@@ -732,7 +740,12 @@ public final class DrawManager {
     }
 
     /**
-     * @param
+     * Draws map.
+     *
+     * @param screen
+     *               Screen to draw on.
+     * @param selectedIndex
+     *               Option selected.
      * */
     public void drawMap(final Screen screen, final int selectedIndex) {
         String[] items = {"BOSS", "level 5", "level 4","level 3", "level 2", "level 1"};
@@ -743,9 +756,9 @@ public final class DrawManager {
         drawExitButton(screen, selectedIndex == 2);
 
         backBufferGraphics.setColor(Color.GREEN);
-        drawCenteredBigString(screen, titleString, screen.getHeight() / 6 + 20);
+        drawCenteredBigString(screen, titleString, screen.getHeight() / 6 + 10);
 
-        drawMapHorizontalLine(screen, screen.getHeight() / 5 + 20);
+        drawMapHorizontalLine(screen, screen.getHeight() / 6 + 30);
 
         Entity levelFrame = new Entity(0, 0, 80*2 + 40, 16*2 + 8, Color.GRAY) {
             { this.spriteType = SpriteType.LevelFrame ; }
@@ -755,13 +768,49 @@ public final class DrawManager {
             if (i > items.length - idx - 1)
                 levelFrame.changeColor(Color.GREEN);
 
-            drawEntity(levelFrame, screen.getWidth()/2 - (80*2 + 40)/2, 140 + 50 * i ) ;
-            drawCenteredBigString(screen, items[i], 170 + 50 * i );
+            drawEntity(levelFrame, screen.getWidth()/2 - (80*2 + 40)/2, 130 + 50 * i ) ;
+            drawCenteredBigString(screen, items[i], 160 + 50 * i );
         }
 
         backBufferGraphics.setColor(Color.GRAY);
         drawCenteredRegularString(screen, instructionsString,
                 screen.getHeight() / 15 * 14);
+
+    }
+
+    /**
+     * Draws background of map screen.
+     *
+     * @param screen
+     *               Screen to draw on.
+     *
+     * */
+    public void drawMapBackground(final Screen screen) {
+        Entity planet1 = new Entity(0, 0, 28 , 35, Color.WHITE) {
+            { this.spriteType = SpriteType.Planet1 ; }
+        } ;
+        drawEntity(planet1, 360, 350);
+
+        Entity planet2 = new Entity(0, 0, 50 , 50, Color.WHITE) {
+            { this.spriteType = SpriteType.Planet2 ; }
+        } ;
+        drawEntity(planet2, -10, 130);
+
+        Entity planet3 = new Entity(0, 0, 40 , 40, Color.WHITE) {
+            { this.spriteType = SpriteType.Planet2 ; }
+        } ;
+        drawEntity(planet3, 380, 190);
+
+        Entity planet4 = new Entity(0, 0, 60 , 30, Color.WHITE) {
+            { this.spriteType = SpriteType.Planet3 ; }
+        } ;
+        drawEntity(planet4, 30, 300);
+
+        Entity planet5 = new Entity(0, 0, 50 , 25, Color.WHITE) {
+            { this.spriteType = SpriteType.Planet3 ; }
+        } ;
+        drawEntity(planet5, 330, 30);
+
     }
 
 	/**

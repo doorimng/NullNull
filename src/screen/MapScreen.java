@@ -66,6 +66,7 @@ public class MapScreen extends Screen {
     private void draw() {
         drawManager.initDrawing(this);
         drawManager.drawMap(this, this.currentLevel);
+        drawManager.drawMapBackground(this);
         drawManager.completeDrawing(this);
     }
 
