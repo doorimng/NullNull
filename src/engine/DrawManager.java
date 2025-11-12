@@ -624,6 +624,25 @@ public final class DrawManager {
                 positionY + 1);
     }
 
+    /**
+     * Draws a thick line from side to side of the screen.
+     *
+     * @param screen
+     *                  Screen to draw on.
+     * @param positionY
+     *                  Y coordinate of the line.
+     */
+    public void drawMapHorizontalLine(final Screen screen, final int positionY) {
+        backBufferGraphics.setColor(Color.WHITE);
+        backBufferGraphics.drawLine(screen.getHeight() / 7, positionY, screen.getWidth(), positionY);
+        backBufferGraphics.drawLine(screen.getHeight() / 7, positionY + 1, screen.getWidth(),
+                positionY + 1);
+        backBufferGraphics.setColor(Color.BLACK);
+        backBufferGraphics.drawLine(screen.getHeight() / 7*5, positionY, screen.getWidth(), positionY);
+        backBufferGraphics.drawLine(screen.getHeight() / 7*5, positionY + 1, screen.getWidth(),
+                positionY + 1);
+    }
+
     public void drawLevel (final Screen screen, final int level) {
         backBufferGraphics.setColor(Color.WHITE);
         String levelString = "Level " + level;
@@ -724,15 +743,17 @@ public final class DrawManager {
         drawExitButton(screen, selectedIndex == 2);
 
         backBufferGraphics.setColor(Color.GREEN);
-        drawCenteredBigString(screen, titleString, screen.getHeight() / 5);
+        drawCenteredBigString(screen, titleString, screen.getHeight() / 6 + 20);
 
-        Entity levelFrame = new Entity(0, 0, 80*2 + 40, 16*2 + 8, Color.LIGHT_GRAY) {
+        drawMapHorizontalLine(screen, screen.getHeight() / 5 + 20);
+
+        Entity levelFrame = new Entity(0, 0, 80*2 + 40, 16*2 + 8, Color.GRAY) {
             { this.spriteType = SpriteType.LevelFrame ; }
         } ;
 
         for ( int i = 0 ; i < items.length ; i ++ ) {
             if (i > items.length - idx - 1)
-                levelFrame.changeColor(Color.YELLOW);
+                levelFrame.changeColor(Color.GREEN);
 
             drawEntity(levelFrame, screen.getWidth()/2 - (80*2 + 40)/2, 140 + 50 * i ) ;
             drawCenteredBigString(screen, items[i], 170 + 50 * i );
