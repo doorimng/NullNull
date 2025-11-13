@@ -64,7 +64,7 @@ public class BossTest {
     void firesWhileInvulnerable() {
         clearInvocations(emitter);
         boss.update();
-        verify(emitter, times(3)).fire(anyInt(), anyInt(), eq(0), anyInt());
+        verify(emitter, times(3)).fire(anyInt(), anyInt(), anyInt(), anyInt());
     }
 
     @Test
@@ -93,7 +93,7 @@ public class BossTest {
 
         clearInvocations(emitter);
         boss.update();
-        verify(emitter, times(5)).fire(anyInt(), anyInt(), eq(0), anyInt());
+        verify(emitter, times(5)).fire(anyInt(), anyInt(), anyInt(), anyInt());
     }
 
     @Test
