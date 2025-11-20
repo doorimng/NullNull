@@ -206,11 +206,10 @@ public class ItemEffect {
     /**
      * @return 아이템이 잘 사용되었는지 여부를 반환합니다.
      * */
-    public static boolean useItem(final GameState gameState, final int playerId, int effectValue) {
+    public static boolean useItem(final GameState gameState, final int playerId) {
 
         // 사용 여부를 반환해주세요.
         int playerIndex = getPlayerIndex(playerId) ;
-        if ( gameState.hasActiveDurationItem(playerIndex) ) return true ;
-        else return false  ;
+        return gameState.hasActiveDurationItem(playerIndex);
     }
 }
