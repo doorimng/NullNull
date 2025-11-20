@@ -391,4 +391,12 @@ public class GameState {
             clearEffects(p);
         }
     }
+
+    /**
+     * @param playerindex 플레이어 상태 (1p/2p) => (제거 요망)
+     * @return 현재 인벤토리에 아이템을 가지고 있는지 여부
+     * */
+    public boolean hasActiveDurationItem(int playerindex) {
+        return true ;
+    }
 }
