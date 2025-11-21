@@ -286,4 +286,7 @@ public class Ship extends Entity {
         addBullet(bullets, centerX - TRIPLE_SHOT_OFFSET, bulletY);
         addBullet(bullets, centerX + TRIPLE_SHOT_OFFSET, bulletY);
     }
+
+
+
 }

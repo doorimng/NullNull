@@ -104,7 +104,9 @@ public final class Core {
 
                 case 2:
                     // 2P mode: building gameState now using user choice
-                    gameState = new GameState(currentLevel, MAX_LIVES, coopSelected, 0);
+                    if (gameState == null) {
+                        gameState = new GameState(currentLevel, MAX_LIVES, coopSelected, 0);
+                    }
 
                     // [ ... case 2: ... ]
                     do {

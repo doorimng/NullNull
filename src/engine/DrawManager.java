@@ -1588,4 +1588,46 @@ public final class DrawManager {
         backBufferGraphics.setColor(color);
         backBufferGraphics.drawString(text, x, y);
     }
+
+    public void drawRevivePrompt(final Screen screen, final int selection) {
+        // 배경 어둡게(반투명)
+        backBufferGraphics.setColor(new Color(0,0,0,180));
+        backBufferGraphics.fillRect(0,0,screen.getWidth(),screen.getHeight());
+
+        // 제목
+        backBufferGraphics.setColor(Color.GREEN);
+        backBufferGraphics.setFont(fontBig);
+        drawCenteredBigString(screen, "YOU DIED", screen.getHeight()/3);
+
+        // 선택지
+        backBufferGraphics.setFont(fontRegular);
+
+        String yes = (selection == 0 ? "> YES <" : "YES");
+        String no  = (selection == 1 ? "> NO <"  : "NO");
+
+        backBufferGraphics.setColor(Color.WHITE);
+        drawCenteredRegularString(screen,"Do you want to revive using 50 coins?", screen.getHeight()/2 - 20);
+
+        drawCenteredRegularString(screen, yes, screen.getHeight()/2 + 20);
+        drawCenteredRegularString(screen, no,  screen.getHeight()/2 + 50);
+    }
+
+    public void drawReviveFail(final Screen screen, final String reason) {
+        backBufferGraphics.setColor(new Color(0,0,0,180));
+        backBufferGraphics.fillRect(0,0,screen.getWidth(),screen.getHeight());
+
+        backBufferGraphics.setColor(Color.RED);
+        backBufferGraphics.setFont(fontBig);
+        drawCenteredBigString(screen, "Failure", screen.getHeight()/2 - 40);
+
+        backBufferGraphics.setFont(fontRegular);
+        backBufferGraphics.setColor(Color.WHITE);
+        drawCenteredRegularString(screen, reason, screen.getHeight()/2);
+
+        drawCenteredRegularString(screen,
+                "ENTER",
+                screen.getHeight()/2 + 40);
+    }
+
+
 }

@@ -83,6 +83,21 @@ public class GameScreen extends Screen {
     private int shipsDestroyed;
     private Ship ship;
     private Boss boss;
+    private ReviveManager reviveManager;
+
+    private enum RevivePhase {
+        PLAYING,
+        REVIVE_PROMPT,
+        REVIVE_RESULT,
+        EXITING
+    }
+    private RevivePhase revivePhase = RevivePhase.PLAYING;
+    private int reviveSelection = 0; // 0 = YES, 1 = NO
+    private String reviveFailMessage = "";
+
+
+
+
 
     /** checks if player took damage
      * 2025-10-02 add new variable
@@ -215,6 +230,10 @@ public class GameScreen extends Screen {
         this.isPaused = false;
         this.pauseCooldown = Core.getCooldown(300);
         this.returnMenuCooldown = Core.getCooldown(300);
+
+        this.reviveManager = new ReviveManager(this.state);
+        this.revivePhase = RevivePhase.PLAYING;
+
     }
 
 
@@ -243,6 +262,25 @@ public class GameScreen extends Screen {
     protected final void update() {
         super.update();
 
+        // ----------------------------------------
+        // Revive Phase Handler
+        // ----------------------------------------
+        switch (this.revivePhase) {
+            case REVIVE_PROMPT:
+                handleRevivePrompt();  // UI 띄우기 + 입력받기
+                return; // 게임 업데이트 중단
+
+            case REVIVE_RESULT:
+                handleReviveFailed();  // 실패 메시지 UI
+                return;
+
+            case EXITING:
+                this.returnCode = 1;
+                this.isRunning = false;
+                return;
+        }
+
+
         // Countdown beep once during pre-start
         if (!this.inputDelay.checkFinished() && !countdownSoundPlayed) {
             long elapsed = System.currentTimeMillis() - this.gameStartTime;
@@ -251,6 +289,8 @@ public class GameScreen extends Screen {
                 countdownSoundPlayed = true;
             }
         }
+
+
 
         checkAchievement();
         if (this.inputDelay.checkFinished() && inputManager.isKeyDown(KeyEvent.VK_ESCAPE) && this.pauseCooldown.checkFinished()) {
@@ -476,6 +516,17 @@ public class GameScreen extends Screen {
 			drawManager.drawPauseOverlay(this);
 		}
 
+        // --- Revive UI ---
+        if (this.revivePhase == RevivePhase.REVIVE_PROMPT) {
+            drawManager.drawRevivePrompt(this, this.reviveSelection);
+        }
+
+        if (this.revivePhase == RevivePhase.REVIVE_RESULT) {
+            drawManager.drawReviveFail(this, this.reviveFailMessage);
+        }
+        // -------------------
+
+
         drawManager.completeDrawing(this);
     }
 
@@ -559,10 +610,20 @@ public class GameScreen extends Screen {
                         drawManager.setLastLife(state.getLivesRemaining() == 1);
                         drawManager.setDeath(state.getLivesRemaining() == 0);
 
-						this.logger.info("Hit on player " + (p + 1) + ", team lives now: " + state.getLivesRemaining());
+                        this.logger.info("Hit on player " + (p + 1) + ", team lives now: " + state.getLivesRemaining());
 						break;
+
+
 					}
 				}
+                // --- Revive Trigger ---
+                if (state.getLivesRemaining() == 0) {
+                    this.revivePhase = RevivePhase.REVIVE_PROMPT;
+                    return;
+                }
+                // ------------------------------
+
+
 			} else {
 				// Player bullet vs enemies
 				// map Bullet owner id (1 or 2) to per-player index (0 or 1)
@@ -692,4 +753,117 @@ public class GameScreen extends Screen {
             achievementManager.unlock("Get 3000 Score");
         }
     }
+
+    // ----------------------------
+    // Revive Prompt Input Handler
+    // ----------------------------
+    private void handleRevivePromptInput() {
+
+        if (state.isSharedLives()) {
+            int now = state.getTeamLives();
+            int give = 6 - now;
+            if (give > 0) state.addTeamLife(give);
+        } else {
+            int now = state.get1PlayerLives();
+            int give = 3 - now;
+            if (give > 0) state.addLife(0, give);
+        }
+
+        if (inputManager.isKeyDown(KeyEvent.VK_UP)) {
+            reviveSelection = 0; // YES
+        }
+        if (inputManager.isKeyDown(KeyEvent.VK_DOWN)) {
+            reviveSelection = 1; // NO
+        }
+
+        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) || inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+            if (reviveSelection == 0) { // YES
+                boolean ok = reviveManager.tryRevive();
+                if (ok) {
+                    respawnPlayer();
+                    this.revivePhase = RevivePhase.PLAYING;
+                } else {
+                    if (!reviveManager.canRevive(state.getLevel())) {
+                        reviveFailMessage = "It's already revived at this level";
+                    } else if (state.getCoins() < 50) {
+                        reviveFailMessage = "You don't have enough coins";
+                    } else {
+                        reviveFailMessage = "You can't revive";
+                    }
+                    this.revivePhase = RevivePhase.REVIVE_RESULT;
+
+                    InputManager.resetKeys();
+                }
+            } else { // NO
+                this.returnCode = 1; // 레벨 선택 화면
+                this.isRunning = false;
+            }
+        }
+    }
+
+
+    // ----------------------------
+    // Revive Result Input Handler
+    // ----------------------------
+    private void handleReviveResultInput() {
+        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
+                inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+
+
+
+
+            this.returnCode = 1;
+            this.isRunning = false;
+        }
+    }
+
+    // ----------------------------
+    // Respawn Player (부활 위치)
+    // ----------------------------
+    private void respawnPlayer() {
+
+
+        for (Ship s : this.ships) {
+            if (s != null) {
+            }
+        }
+
+
+
+
+        this.levelFinished = false;
+        this.screenFinishedCooldown.reset();
+
+
+        this.revivePhase = RevivePhase.PLAYING;
+    }
+
+
+
+    // --------------------------------------------
+    // RevivePrompt UI.phase handler
+    // --------------------------------------------
+    private void handleRevivePrompt() {
+        handleRevivePromptInput();
+        draw();
+    }
+
+    // --------------------------------------------
+    // Revive Failure
+    // --------------------------------------------
+    private void handleReviveFailed() {
+        handleReviveResultInput();
+        draw();
+    }
+
+    // --------------------------------------------
+    // Revive Success
+    // --------------------------------------------
+    private void handleReviveSuccess() {
+        this.revivePhase = RevivePhase.PLAYING;
+    }
+
+
+
+
 }

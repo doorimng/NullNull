@@ -4,6 +4,7 @@ package engine;
 import java.util.HashMap;
 import java.util.Map;
 import engine.ItemEffect.ItemEffectType;
+import screen.GameScreen;
 
 /**
  * Implements an object that stores the state of the game between levels -
@@ -48,6 +49,11 @@ public class GameState {
         }
     }
 
+
+
+
+
+
     /** Each player has all effect types always initialized (inactive at start). */
     private final Map<Integer, Map<ItemEffectType, EffectState>> playerEffects = new HashMap<>();
 
@@ -69,6 +75,7 @@ public class GameState {
 			// legacy: put all lives on P1
 			lives[0] = Math.max(0, livesEach);
 		}
+
 
         initializeEffectStates();
     }
