@@ -406,4 +406,29 @@ public class GameState {
     public boolean hasActiveDurationItem(int playerindex) {
         return true ;
     }
+
+    /**
+     * Gets remaining duration in milliseconds for a specific effect
+     *
+     * @param playerIndex
+     *            Index of the player (0 or 1)
+     * @param type
+     *            Type of effect to check
+     * @return
+     *            Remaining duration in ms, or 0 if not active
+     */
+    public int getEffectDuration(int playerIndex, ItemEffectType type) {
+        if (playerIndex < 0 || playerIndex >= NUM_PLAYERS) return 0;
+
+        Map<ItemEffectType, EffectState> effects = playerEffects.get(playerIndex);
+        if (effects == null) return 0;
+
+        EffectState state = effects.get(type);
+        if (state == null || !state.active || state.cooldown == null) return 0;
+
+        return state.cooldown.getDuration();
+    }
+
+
+
 }

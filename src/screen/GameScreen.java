@@ -84,6 +84,7 @@ public class GameScreen extends Screen {
     private Ship ship;
     private Boss boss;
     private ReviveManager reviveManager;
+    private ItemInventory inventory;
 
     private enum RevivePhase {
         PLAYING,
@@ -190,6 +191,11 @@ public class GameScreen extends Screen {
      */
     public final void initialize() {
         super.initialize();
+        if (this.inventory != null) {
+            this.inventory.clear();
+        } else {
+            this.inventory = new ItemInventory(this.state, 0);
+        }
 
         state.clearAllEffects();
 
@@ -211,6 +217,7 @@ public class GameScreen extends Screen {
         } else {
             this.ships[1] = null; // ensuring there's no P2 ship in 1P mode
         }
+        this.inventory = new ItemInventory(this.state, 0);
 
         this.enemyShipSpecialCooldown = Core.getVariableCooldown(BONUS_SHIP_INTERVAL, BONUS_SHIP_VARIANCE);
         this.enemyShipSpecialCooldown.reset();
@@ -394,6 +401,9 @@ public class GameScreen extends Screen {
 
             // Item Entity Code
             cleanItems();
+            if (this.inventory != null) {
+                this.inventory.update();
+            }
             manageItemPickups();
 
             // check active item affects
@@ -493,8 +503,12 @@ public class GameScreen extends Screen {
         drawManager.drawLevel(this, this.state.getLevel());
 		drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
         drawManager.drawShipCount(this, enemyShipFormation.getShipCount());
+        if (this.inventory != null && this.inputDelay.checkFinished()) {
+            drawManager.drawItemInventory(this, this.inventory, 20, SEPARATION_LINE_HEIGHT + 10);
+        }
 
-		if (!this.inputDelay.checkFinished()) {
+
+        if (!this.inputDelay.checkFinished()) {
 			int countdown = (int) ((INPUT_DELAY - (System.currentTimeMillis() - this.gameStartTime)) / 1000);
 			drawManager.drawCountDown(this, this.state.getLevel(), countdown, this.bonusLife);
 			drawManager.drawHorizontalLine(this, this.height / 2 - this.height / 12);
@@ -569,10 +583,43 @@ public class GameScreen extends Screen {
             for(Ship ship: this.ships) {
                 if(ship == null) continue;
                 if (checkCollision(item, ship) && !collected.contains(item)) {
+
+                    // Check if it's a duration item
+                    boolean isDurationItem = item.getType().equals("TRIPLESHOT") ||
+                            item.getType().equals("SCOREBOOST") ||
+                            item.getType().equals("BULLETSPEEDUP");
+
+                    // If duration item and inventory full, skip pickup
+                    if (isDurationItem && inventory != null && inventory.isFull()) {
+                        this.logger.info("Player " + ship.getPlayerId() + " inventory full, cannot pick up: " + item.getType());
+                        continue; // Cannot pick up
+                    }
+
                     collected.add(item);
                     this.logger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
                     SoundManager.playOnce("sound/hover.wav");
-                    item.applyEffect(getGameState(), ship.getPlayerId());
+
+                    boolean applied = item.applyEffect(getGameState(), ship.getPlayerId());
+
+                    // If successfully applied duration item, add to inventory
+                    if (applied && isDurationItem && inventory != null) {
+                        ItemEffect.ItemEffectType effectType = null;
+                        switch (item.getType()) {
+                            case "TRIPLESHOT":
+                                effectType = ItemEffect.ItemEffectType.TRIPLESHOT;
+                                break;
+                            case "SCOREBOOST":
+                                effectType = ItemEffect.ItemEffectType.SCOREBOOST;
+                                break;
+                            case "BULLETSPEEDUP":
+                                effectType = ItemEffect.ItemEffectType.BULLETSPEEDUP;
+                                break;
+                        }
+
+                        if (effectType != null) {
+                            inventory.addItem(effectType);
+                        }
+                    }
                 }
             }
         }

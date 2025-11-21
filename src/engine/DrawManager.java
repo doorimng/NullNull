@@ -1629,5 +1629,86 @@ public final class DrawManager {
                 screen.getHeight()/2 + 40);
     }
 
+    /**
+     * Draws the item inventory on the game screen.
+     * Shows up to 2 active items with their remaining duration.
+     *
+     * @param screen
+     *            Screen to draw on.
+     * @param inventory
+     *            Player's item inventory.
+     * @param positionX
+     *            X position for inventory display.
+     * @param positionY
+     *            Y position for inventory display.
+     */
+    public void drawItemInventory(final Screen screen, final ItemInventory inventory,
+                                  final int positionX, final int positionY) {
+        if (inventory == null) return;
+
+        final int SLOT_SIZE = 40;
+        final int SLOT_SPACING = 5;
+        final int BORDER_WIDTH = 2;
+
+        for (int i = 0; i < inventory.getMaxSlots(); i++) {
+            int slotX = positionX + i * (SLOT_SIZE + SLOT_SPACING);
+            int slotY = positionY;
+
+            // Draw slot background
+            backBufferGraphics.setColor(new Color(40, 40, 40, 200));
+            backBufferGraphics.fillRect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
+
+            // Draw slot border
+            ItemEffect.ItemEffectType itemType = inventory.getSlot(i);
+            if (itemType != null) {
+                backBufferGraphics.setColor(Color.GREEN);
+            } else {
+                backBufferGraphics.setColor(Color.GRAY);
+            }
+            backBufferGraphics.drawRect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
+            backBufferGraphics.drawRect(slotX + 1, slotY + 1, SLOT_SIZE - 2, SLOT_SIZE - 2);
+
+            // Draw item icon if slot has item
+            if (itemType != null) {
+                // Draw item name abbreviation
+                backBufferGraphics.setFont(fontRegular);
+                backBufferGraphics.setColor(Color.WHITE);
+
+                String itemText = "";
+                switch (itemType) {
+                    case TRIPLESHOT:
+                        itemText = "x3";
+                        break;
+                    case SCOREBOOST:
+                        itemText = "x2";
+                        break;
+                    case BULLETSPEEDUP:
+                        itemText = ">>>";
+                        break;
+                }
+
+                // Center text in slot
+                int textWidth = fontRegularMetrics.stringWidth(itemText);
+                int textX = slotX + (SLOT_SIZE - textWidth) / 2;
+                int textY = slotY + (SLOT_SIZE + fontRegularMetrics.getAscent()) / 2 - 2;
+                backBufferGraphics.drawString(itemText, textX, textY);
+
+                // Draw remaining duration below slot
+                int duration = inventory.getRemainingDuration(i);
+                if (duration > 0) {
+                    String durationText = String.format("%.1fs", duration / 1000.0);
+                    backBufferGraphics.setColor(Color.YELLOW);
+                    int durationWidth = fontRegularMetrics.stringWidth(durationText);
+                    int durationX = slotX + (SLOT_SIZE - durationWidth) / 2;
+                    int durationY = slotY + SLOT_SIZE + fontRegularMetrics.getHeight();
+                    backBufferGraphics.drawString(durationText, durationX, durationY);
+                }
+            }
+        }
+    }
+
+
+
+
 
 }
