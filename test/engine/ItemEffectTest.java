@@ -443,4 +443,101 @@ public class ItemEffectTest {
         // then
         assertEquals(2, maxSlots);
     }
+
+    @DisplayName("applyTripleShot - 장착된 아이템이 다르다면 장착 불가능")
+    @Test
+    void testApplyTripleShotFail() {
+        // given : 다른 아이템이 장착되어 있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(2);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyTripleShot(gameState, 0, 2, 5000, 0);
+
+        // then : 장착에 실패해야 함
+        assertFalse(result);
+        verify(gameState, never()).setActiveDuringItem(anyInt());
+    }
+
+    @DisplayName("applyTripleShot - 활장착된 아이템이 없거나 같아야 장착 가능")
+    @Test
+    void testApplyTripleShotPass() {
+        // given : 인벤토리가 비어있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(0);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyTripleShot(gameState, 0, 1, 5000, 0);
+
+        // then : 장착에 성공해야 함
+        assertTrue(result);
+        verify(gameState).setActiveDuringItem(1);
+    }
+
+    @DisplayName("applyScoreBoost - 장착된 아이템이 다르다면 장착 불가능")
+    @Test
+    void testApplyScoreBoostFail() {
+        // given : 다른 아이템이 장착되어 있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(1);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyScoreBoost(gameState, 0, 2, 5000, 0);
+
+        // then : 장착에 실패해야 함
+        assertFalse(result);
+        verify(gameState, never()).setActiveDuringItem(anyInt());
+    }
+
+    @DisplayName("applyScoreBoost - 활장착된 아이템이 없거나 같아야 장착 가능")
+    @Test
+    void testApplyScoreBoostPass() {
+        // given : 인벤토리가 비어있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(0);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyScoreBoost(gameState, 0, 2, 5000, 0);
+
+        // then : 장착에 성공해야 함
+        assertTrue(result);
+        verify(gameState).setActiveDuringItem(2);
+    }
+
+    @DisplayName("applyBulletSpeedUp - 장착된 아이템이 다르다면 장착 불가능")
+    @Test
+    void testApplyBulletSpeedUpFail() {
+        // given : 다른 아이템이 장착되어 있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(1);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyBulletSpeedUp(gameState, 0, 3, 5000, 0);
+
+        // then : 장착에 실패해야 함
+        assertFalse(result);
+        verify(gameState, never()).setActiveDuringItem(anyInt());
+    }
+
+    @DisplayName("applyBulletSpeedUp - 활장착된 아이템이 없거나 같아야 장착 가능")
+    @Test
+    void testApplyBulletSpeedUpPass() {
+        // given : 인벤토리가 비어있다고 가정
+        GameState gameState = mock(GameState.class);
+        when(gameState.spendCoins(anyInt(), anyInt())).thenReturn(true);
+        when(gameState.getActiveDurationItem(anyInt())).thenReturn(0);
+
+        // when : 장착 시도
+        boolean result = ItemEffect.applyBulletSpeedUp(gameState, 0, 3, 5000, 0);
+
+        // then : 장착에 성공해야 함
+        assertTrue(result);
+        verify(gameState).setActiveDuringItem(3);
+    }
+
 }
