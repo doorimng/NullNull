@@ -529,7 +529,7 @@ public class BossScreen extends Screen {
         drawManager.drawLevel(this, this.state.getLevel());
         drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
         if (this.inventory != null && this.inputDelay.checkFinished()) {
-            drawManager.drawItemInventory(this, this.inventory, 20, SEPARATION_LINE_HEIGHT + 10);
+            drawManager.drawItemInventory(this, this.inventory, 40, SEPARATION_LINE_HEIGHT -40);
         }
 
         // Draw Boss HP Bar

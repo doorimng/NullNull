@@ -38,10 +38,10 @@ public final class ItemManager {
     /** ITEM WEIGHT **/
     public static enum DropTier {
         //DEBUG    (500.0),
-        NONE     (10.0),
-        COMMON   (10.0),
-        UNCOMMON (10.0),
-        RARE     (70.0);
+        NONE     (50.0),
+        COMMON   (25.0),
+        UNCOMMON (20.0),
+        RARE     (5.0);
 
         public final double tierWeight;
         DropTier(double tierWeight) { this.tierWeight = Math.max(0.0, tierWeight); }
