@@ -17,9 +17,9 @@ public class ItemEffect {
      * attempt to spend the corresponding amount of coins. If the
      * player doesn't have enough coins the effect is not applied.
      */
-    private static final int COST_TRIPLESHOT = 100;
+    private static final int COST_TRIPLESHOT = 0;
     private static final int COST_SCOREBOOST = 0;
-    private static final int COST_BULLETSPEEDUP = 75;
+    private static final int COST_BULLETSPEEDUP = 0;
 
     /**=========================SINGLE USE=================================**/
 
@@ -131,16 +131,17 @@ public class ItemEffect {
      * Returns true if purchase succeeded and effect applied, false if insufficient coins.
      */
     public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration, Integer overrideCost) {
+        logger.info("[applyTripleShot] effectValue=" + effectValue + ", duration=" + duration + ", overrideCost=" + overrideCost);
         if (gameState == null) return false;
         final int cost = (overrideCost != null) ? overrideCost : COST_TRIPLESHOT;
 
-//        if (!trySpendCoins(gameState, playerId, cost)) {
-//            return false;
-//        }
-        int playerIndex = getPlayerIndex(playerId);
-        if (gameState.hasActiveDurationItem(playerIndex)) {
+        if (!trySpendCoins(gameState, playerId, cost)) {
             return false;
         }
+        int playerIndex = getPlayerIndex(playerId);
+//        if (gameState.hasActiveDurationItem(playerIndex)) {
+//            return false;
+//        }
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.TRIPLESHOT, effectValue, duration);
