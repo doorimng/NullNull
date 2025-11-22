@@ -50,6 +50,7 @@ public class Item extends Entity {
         this.itemSpeed = speed;
 
         setSprite();
+        setItemColor();
     }
 
     /**
@@ -164,6 +165,7 @@ public class Item extends Entity {
         this.type = newType;
         this.itemSpeed = 0;
         setSprite(); // change to your enum if different
+        setItemColor();
     }
 
     /**
@@ -173,5 +175,31 @@ public class Item extends Entity {
      */
     public final String getType() {
         return this.type;
+    }
+
+    private void setItemColor() {
+        switch (this.type) {
+            case "COIN":
+                this.changeColor(Color.YELLOW); // 노란색
+                break;
+            case "HEAL":
+                this.changeColor(Color.RED);
+                break;
+            case "SCORE":
+                this.changeColor(Color.WHITE);
+                break;
+            case "TRIPLESHOT":
+                this.changeColor(Color.cyan);
+                break;
+            case "SCOREBOOST":
+                this.changeColor(Color.cyan);
+                break;
+            case "BULLETSPEEDUP":
+                this.changeColor(Color.cyan);
+                break;
+            default:
+                this.changeColor(Color.WHITE); // 기본 흰색
+                break;
+        }
     }
 }

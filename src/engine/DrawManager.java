@@ -590,9 +590,9 @@ public final class DrawManager {
             }
         }
         else {
-            backBufferGraphics.drawString(Integer.toString(lives), 20, 40);
+            backBufferGraphics.drawString(Integer.toString(lives), 20, 25);
             for (int i = 0; i<lives; i++) {
-                drawEntity(heart, 40 + 35 * i, 23);
+                drawEntity(heart, 40 + 35 * i, 10);
             }
         }
 
@@ -1628,6 +1628,72 @@ public final class DrawManager {
                 "ENTER",
                 screen.getHeight()/2 + 40);
     }
+
+    /**
+     * Draws the item inventory on the game screen.
+     * Shows up to 2 active items with their remaining duration.
+     *
+     * @param screen
+     *            Screen to draw on.
+     * @param inventory
+     *            Player's item inventory.
+     * @param positionX
+     *            X position for inventory display.
+     * @param positionY
+     *            Y position for inventory display.
+     */
+    public void drawItemInventory(final Screen screen, final ItemInventory inventory,
+                                  final int positionX, final int positionY) {
+        if (inventory == null) return;
+
+        final int SLOT_SIZE = 40;
+        final int SLOT_SPACING = 5;
+        final int BLINK_THRESHOLD_MS = 1000;
+        final int BLINK_INTERVAL_MS = 250;
+
+
+
+        for (int i = 0; i < inventory.getMaxSlots(); i++) {
+            int slotX = positionX + i * (SLOT_SIZE + SLOT_SPACING);
+            int slotY = positionY;
+
+            ItemEffect.ItemEffectType itemType = inventory.getSlot(i);
+
+            // Draw item text if slot has item
+            if (itemType != null) {
+                backBufferGraphics.setFont(fontRegular);
+
+                String itemText = "";
+                switch (itemType) {
+                    case TRIPLESHOT:
+                        itemText = "+3";
+                        break;
+                    case SCOREBOOST:
+                        itemText = "x2";
+                        break;
+                    case BULLETSPEEDUP:
+                        itemText = ">>>";
+                        break;
+                }
+
+                // Check if should blink
+                int remainingTime = inventory.getRemainingDuration(i);
+                if (remainingTime > 0 && remainingTime <= BLINK_THRESHOLD_MS) {
+                    boolean showText = (System.currentTimeMillis() / BLINK_INTERVAL_MS) % 2 == 0;
+                    if (!showText) continue; // Skip drawing this item
+                }
+
+                backBufferGraphics.setColor(Color.cyan);
+                int textWidth = fontRegularMetrics.stringWidth(itemText);
+                int textX = slotX + (SLOT_SIZE - textWidth) / 2;
+                int textY = slotY + (SLOT_SIZE + fontRegularMetrics.getAscent()) / 2 - 2;
+                backBufferGraphics.drawString(itemText, textX, textY);
+            }
+        }
+    }
+
+
+
 
 
 }
