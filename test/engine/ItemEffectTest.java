@@ -103,4 +103,58 @@ public class ItemEffectTest {
         verify(mockGameState, never()).addEffect(anyInt(), any(ItemEffectType.class), anyInt(), anyInt());
     }
 
+    /**
+     * [인벤토리 아이템 표시 UI]
+     * 아이템을 사용했을 경우 */
+    @DisplayName("아이템이 잘 추가되는지 확인")
+    @Test
+    void testAddItem() {
+        // given : 인벤토리가 비어있다고 가정
+        GameState gameState = mock(GameState.class);
+        ItemInventory itemInventory = new ItemInventory(gameState, 0);
+
+        // when : 아이템을 얻음
+        boolean added = itemInventory.addItem(ItemEffectType.TRIPLESHOT);
+
+        // then : 아이템이 추가되었어야 함
+        assertTrue(added);
+        assertEquals(ItemEffectType.TRIPLESHOT, itemInventory.getSlot(0));
+    }
+
+    /**
+     * [인벤토리 아이템 표시 UI]
+     * 아이템을 사용했을 경우 */
+    @DisplayName("아이템이 잘 사용되는지 확인")
+    @Test
+    void testUpdateRemovesExpired() {
+        // given : 아이템이 이미 있다고 가정
+        GameState gameState = mock(GameState.class);
+        ItemInventory itemInventory = new ItemInventory(gameState, 0);
+        itemInventory.addItem(ItemEffectType.TRIPLESHOT);
+        when(gameState.hasEffect(0, ItemEffectType.TRIPLESHOT)).thenReturn(false); // 만료된 상태
+
+        // when : 아이템이 만료됨
+        itemInventory.update();
+
+        // then : 아이템이 없어야 함
+        assertNull(itemInventory.getSlot(0));
+    }
+
+    @DisplayName("인벤토리 가득 찬 상태를 잘 확인하는지 점검")
+    @Test
+    void testInventoryFull() {
+        // given : 인벤토리가 꽉 찬 상태라고 가정
+        GameState gameState = mock(GameState.class);
+        ItemInventory itemInventory = new ItemInventory(gameState, 0);
+        itemInventory.addItem(ItemEffectType.TRIPLESHOT);
+        itemInventory.addItem(ItemEffectType.SCOREBOOST);
+
+        // when : 아이템이 꽉 찼는지 확인
+        boolean result = itemInventory.isFull();
+
+        // then : true 반환해야 함
+        assertTrue(result);
+    }
+
+
 }
