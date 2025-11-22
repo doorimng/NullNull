@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.awt.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class ItemEffectTest {
 
@@ -188,7 +187,7 @@ public class ItemEffectTest {
         assertEquals(80, gameState.getCoins());
     }
 
-    @DisplayName("아이템 색상 적용 테스트")
+    @DisplayName("COIN 아이템 색상 적용 테스트")
     @Test
     void testCoinItemColor() {
         // given : COIN 타입 아이템 생성 준비
@@ -200,6 +199,85 @@ public class ItemEffectTest {
         // then : 색상이 노란색인지 확인
         assertEquals(new Color(255, 255, 0), appliedColor);
     }
+
+    @DisplayName("HEAL 아이템 색상 적용 테스트")
+    @Test
+    void testHealItemColor() {
+        // given : Heal 타입 아이템 생성 준비
+        Item healItem = new Item("HEAL", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = healItem.getColor();
+
+        // then : 색상이 빨간색인지 확인
+        assertEquals(new Color(255, 0, 0), appliedColor);
+    }
+
+    @DisplayName("SCORE 아이템 색상 적용 테스트")
+    @Test
+    void testScoreItemColor() {
+        // given : Score 타입 아이템 생성 준비
+        Item scoreItem = new Item("SCORE", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = scoreItem.getColor();
+
+        // then : 색상이 흰색인지 확인
+        assertEquals(new Color(255, 255, 255), appliedColor);
+    }
+
+    @DisplayName("TRIPLESHOT 아이템 색상 적용 테스트")
+    @Test
+    void testTripleShotItemColor() {
+        // given : TripleShot 타입 아이템 생성 준비
+        Item tripleShotItem = new Item("TRIPLESHOT", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = tripleShotItem.getColor();
+
+        // then : 색상이 cyan인지 확인
+        assertEquals(new Color(0, 255, 255), appliedColor);
+    }
+
+    @DisplayName("SCOREBOOST 아이템 색상 적용 테스트")
+    @Test
+    void testScoreBoostItemColor() {
+        // given : ScoreBoost 타입 아이템 생성 준비
+        Item scoreBoostItem = new Item("SCOREBOOST", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = scoreBoostItem.getColor();
+
+        // then : 색상이 cyan인지 확인
+        assertEquals(new Color(0, 255, 255), appliedColor);
+    }
+
+    @DisplayName("BulletSpeedUp 아이템 색상 적용 테스트")
+    @Test
+    void testBulletSpeedUpItemColor() {
+        // given : BulletSpeedUp 타입 아이템 생성 준비
+        Item bulletSpeedUpItem = new Item("BULLETSPEEDUP", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = bulletSpeedUpItem.getColor();
+
+        // then : 색상이 cyan인지 확인
+        assertEquals(new Color(0, 255, 255), appliedColor);
+    }
+
+    @DisplayName("defalut 아이템 색상 적용 테스트")
+    @Test
+    void testDefaultItemColor() {
+        // given : 이외 타입 아이템 생성 준비
+        Item otherItem = new Item("OtherItem", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = otherItem.getColor();
+
+        // then : 색상이 흰색인지 확인
+        assertEquals(new Color(255, 255, 255), appliedColor);
+    }
+
 
     @DisplayName("effectState가 null일 경우 0 반환")
     @Test
@@ -246,5 +324,123 @@ public class ItemEffectTest {
 
         // then
         assertEquals(0, duration);
+    }
+
+    @DisplayName("인벤토리 비어있을 때 isFull() 테스트")
+    @Test
+    void testInventoryEmptyIsNotFull() {
+        // given : 빈 인벤토리
+        GameState mockGameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(mockGameState, 0);
+
+        // when : 꽉 찼는지 확인
+        boolean result = inventory.isFull();
+
+        // then : false여야 함
+        assertFalse(result);
+    }
+
+    @DisplayName("isFull()이 false일 때 테스트")
+    @Test
+    void testInventoryPartiallyFull() {
+        // given : 한 슬롯만 채워진 인벤토리
+        GameState mockGameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(mockGameState, 0);
+        inventory.addItem(ItemEffectType.TRIPLESHOT);
+
+        // when : 꽉 찼는지 확인
+        boolean result = inventory.isFull();
+
+        // then : 아직 false
+        assertFalse(result);
+    }
+
+    @DisplayName("isFull()이 True일 때 테스트")
+    @Test
+    void testInventoryCompletelyFull() {
+        // given : 모든 슬롯이 채워진 인벤토리
+        GameState mockGameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(mockGameState, 0);
+
+        // MAX_SLOTS가 2라면 2번 addItem 호출
+        inventory.addItem(ItemEffectType.TRIPLESHOT);
+        inventory.addItem(ItemEffectType.SCOREBOOST);
+
+        // when : 인벤토리가 꽉 찼는지 확인
+        boolean result = inventory.isFull();
+
+        // then : true여야 함
+        assertTrue(result);
+    }
+
+    @DisplayName("슬롯이 비어 있을 때 duration 테스트")
+    @Test
+    void testRemainingDurationEmptySlot() {
+        // given
+        GameState gameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(gameState, 0);
+
+        // 슬롯 비어있음
+        assertNull(inventory.getSlot(0));
+
+        // when
+        int duration = inventory.getRemainingDuration(0);
+
+        // then
+        assertEquals(0, duration);
+    }
+
+    @DisplayName("슬롯에 아이템 있으며 효과도 있을 때 duration 테스트")
+    @Test
+    void testRemainingDurationActiveEffect() {
+        // given
+        GameState gameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(gameState, 0);
+
+        inventory.addItem(ItemEffectType.TRIPLESHOT);
+
+        when(gameState.hasEffect(0, ItemEffectType.TRIPLESHOT)).thenReturn(true);
+        when(gameState.getEffectDuration(0, ItemEffectType.TRIPLESHOT)).thenReturn(5000);
+
+        // when
+        int duration = inventory.getRemainingDuration(0);
+
+        // then
+        assertEquals(5000, duration);
+    }
+
+    @DisplayName("clear() 실행 테스트")
+    @Test
+    void testClearInventory() {
+        // given
+        GameState gameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(gameState, 0);
+
+        inventory.addItem(ItemEffectType.TRIPLESHOT);
+        inventory.addItem(ItemEffectType.SCOREBOOST);
+
+        assertNotNull(inventory.getSlot(0));
+        assertNotNull(inventory.getSlot(1));
+
+        // when
+        inventory.clear();
+
+        // then
+        assertNull(inventory.getSlot(0));
+        assertNull(inventory.getSlot(1));
+    }
+
+    @DisplayName("MaxSlot 커버 테스트")
+    @Test
+    void testGetMaxSlots() {
+        // given
+        GameState gameState = mock(GameState.class);
+        ItemInventory inventory = new ItemInventory(gameState, 0);
+
+        // when
+        int maxSlots = inventory.getMaxSlots();
+
+        // then
+        assertEquals(2, maxSlots);
     }
 }
