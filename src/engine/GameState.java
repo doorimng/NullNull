@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import engine.ItemEffect.ItemEffectType;
-import entity.Item;
 
 /**
  * Implements an object that stores the state of the game between levels -
@@ -51,7 +50,8 @@ public class GameState {
         }
     }
 
-    public int activeDuringItem = 0 ;
+    private int activeDuringItem = 0 ;
+    public void setActiveDuringItem(int value) { this.activeDuringItem = value; }
 
     /** Each player has all effect types always initialized (inactive at start). */
     private final Map<Integer, Map<ItemEffectType, EffectState>> playerEffects = new HashMap<>();

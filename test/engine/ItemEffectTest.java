@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
 
 public class ItemEffectTest {
 
-    private ItemEffectType mockItemEffectType ;
     private GameState mockGameState ;
     private final int playerId = 1 ;
     private final int playerIndex = 0 ;

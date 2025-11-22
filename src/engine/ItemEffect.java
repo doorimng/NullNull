@@ -153,7 +153,7 @@ public class ItemEffect {
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.TRIPLESHOT, effectValue, duration);
         logger.info("[ItemEffect - TRIPLESHOT] Player " + playerId + " applied for " + duration + "s.");
-        gameState.activeDuringItem = 1 ;
+        gameState.setActiveDuringItem(1);
         return true;
     }
 
@@ -172,7 +172,7 @@ public class ItemEffect {
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.SCOREBOOST, effectValue, duration);
         logger.info("[ItemEffect - SCOREBOOST] Player " + playerId + " applied for " + duration + "s. Score gain will be multiplied by " + effectValue + ".");
-        gameState.activeDuringItem = 2 ;
+        gameState.setActiveDuringItem(2);
         return true;
     }
 
@@ -194,7 +194,7 @@ public class ItemEffect {
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.BULLETSPEEDUP, effectValue, duration);
         logger.info("[ItemEffect - BULLETSPEEDUP] Player " + playerId + " applied for " + duration + "s.");
-        gameState.activeDuringItem = 3 ;
+        gameState.setActiveDuringItem(3);
         return true;
     }
     public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration) {
