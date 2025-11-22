@@ -1,11 +1,16 @@
 package engine;
 
 import engine.ItemEffect.ItemEffectType;
+import entity.Item;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class ItemEffectTest {
 
@@ -181,5 +186,65 @@ public class ItemEffectTest {
         // then : 사용 실패, 잔액 그대로
         assertFalse(spent);
         assertEquals(80, gameState.getCoins());
+    }
+
+    @DisplayName("아이템 색상 적용 테스트")
+    @Test
+    void testCoinItemColor() {
+        // given : COIN 타입 아이템 생성 준비
+        Item coinItem = new Item("COIN", 0, 0, 5);
+
+        // when : 생성자에서 setItemColor 호출됨
+        Color appliedColor = coinItem.getColor();
+
+        // then : 색상이 노란색인지 확인
+        assertEquals(new Color(255, 255, 0), appliedColor);
+    }
+
+    @DisplayName("effectState가 null일 경우 0 반환")
+    @Test
+    void testEffectDurationEffectStateNull() {
+        GameState gameState = new GameState(1, 3, false, 100);
+
+        // given : effectState 삭제 또는 비활성화
+        gameState.clearEffects(0);
+
+        // when
+        int duration = gameState.getEffectDuration(0, ItemEffectType.TRIPLESHOT);
+
+        // then
+        assertEquals(0, duration);
+    }
+
+    @DisplayName("effect가 활성화 상태이면 지속시간 반환")
+    @Test
+    void testEffectDurationActive() {
+        GameState gameState = new GameState(1, 3, false, 100);
+
+        // given : 효과 추가
+        gameState.addEffect(0, ItemEffectType.TRIPLESHOT, 1, 1);
+
+        // when
+        int duration = gameState.getEffectDuration(0, ItemEffectType.TRIPLESHOT);
+
+        // then : 활성화된 효과는 0보다 큰 지속시간 반환
+        assertTrue(duration > 0);
+    }
+
+    @DisplayName("effect 만료 시 0 반환")
+    @Test
+    void testEffectDurationExpired() throws InterruptedException {
+        GameState gameState = new GameState(1, 3, false, 100);
+
+        // given : 효과 추가 (1초 지속)
+        gameState.addEffect(0, ItemEffectType.TRIPLESHOT, 1, 1);
+
+        // when : 효과 만료 (1초 대기 후 update)
+        Thread.sleep(1100);
+        gameState.updateEffects();
+        int duration = gameState.getEffectDuration(0, ItemEffectType.TRIPLESHOT);
+
+        // then
+        assertEquals(0, duration);
     }
 }
