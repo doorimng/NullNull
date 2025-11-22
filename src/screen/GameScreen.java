@@ -504,7 +504,7 @@ public class GameScreen extends Screen {
 		drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
         drawManager.drawShipCount(this, enemyShipFormation.getShipCount());
         if (this.inventory != null && this.inputDelay.checkFinished()) {
-            drawManager.drawItemInventory(this, this.inventory, 20, SEPARATION_LINE_HEIGHT + 10);
+            drawManager.drawItemInventory(this, this.inventory, 40, SEPARATION_LINE_HEIGHT -40);
         }
 
 

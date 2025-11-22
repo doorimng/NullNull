@@ -590,9 +590,9 @@ public final class DrawManager {
             }
         }
         else {
-            backBufferGraphics.drawString(Integer.toString(lives), 20, 40);
+            backBufferGraphics.drawString(Integer.toString(lives), 20, 25);
             for (int i = 0; i<lives; i++) {
-                drawEntity(heart, 40 + 35 * i, 23);
+                drawEntity(heart, 40 + 35 * i, 10);
             }
         }
 
@@ -1648,50 +1648,20 @@ public final class DrawManager {
 
         final int SLOT_SIZE = 40;
         final int SLOT_SPACING = 5;
-        final int BORDER_WIDTH = 2;
         final int BLINK_THRESHOLD_MS = 1000;
         final int BLINK_INTERVAL_MS = 250;
+
+
 
         for (int i = 0; i < inventory.getMaxSlots(); i++) {
             int slotX = positionX + i * (SLOT_SIZE + SLOT_SPACING);
             int slotY = positionY;
 
-            // Draw slot background
-            backBufferGraphics.setColor(new Color(40, 40, 40, 200));
-            backBufferGraphics.fillRect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
-
-            // Draw slot border
             ItemEffect.ItemEffectType itemType = inventory.getSlot(i);
+
+            // Draw item text if slot has item
             if (itemType != null) {
-                int remainingTime = inventory.getRemainingDuration(i);
-
-
-                if (remainingTime > 0 && remainingTime <= BLINK_THRESHOLD_MS) {
-
-                    boolean showBorder = (System.currentTimeMillis() / BLINK_INTERVAL_MS) % 2 == 0;
-                    if (showBorder) {
-                        backBufferGraphics.setColor(Color.GREEN);}
-                    else {
-                        backBufferGraphics.setColor(Color.GRAY);}
-                }
-
-
-                    else {
-                        backBufferGraphics.setColor(Color.GREEN);
-                    }
-
-            }
-            else {
-                        backBufferGraphics.setColor(Color.GRAY);
-                    }
-            backBufferGraphics.drawRect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
-            backBufferGraphics.drawRect(slotX + 1, slotY + 1, SLOT_SIZE - 2, SLOT_SIZE - 2);
-
-            // Draw item icon if slot has item
-            if (itemType != null) {
-                // Draw item name abbreviation
                 backBufferGraphics.setFont(fontRegular);
-                backBufferGraphics.setColor(Color.WHITE);
 
                 String itemText = "";
                 switch (itemType) {
@@ -1706,22 +1676,18 @@ public final class DrawManager {
                         break;
                 }
 
-                // Center text in slot
+                // Check if should blink
+                int remainingTime = inventory.getRemainingDuration(i);
+                if (remainingTime > 0 && remainingTime <= BLINK_THRESHOLD_MS) {
+                    boolean showText = (System.currentTimeMillis() / BLINK_INTERVAL_MS) % 2 == 0;
+                    if (!showText) continue; // Skip drawing this item
+                }
+
+                backBufferGraphics.setColor(Color.cyan);
                 int textWidth = fontRegularMetrics.stringWidth(itemText);
                 int textX = slotX + (SLOT_SIZE - textWidth) / 2;
                 int textY = slotY + (SLOT_SIZE + fontRegularMetrics.getAscent()) / 2 - 2;
                 backBufferGraphics.drawString(itemText, textX, textY);
-
-                // Draw remaining duration below slot
-                int duration = inventory.getRemainingDuration(i);
-                if (duration > 0) {
-                    String durationText = String.format("%.1fs", duration / 1000.0);
-                    backBufferGraphics.setColor(Color.YELLOW);
-                    int durationWidth = fontRegularMetrics.stringWidth(durationText);
-                    int durationX = slotX + (SLOT_SIZE - durationWidth) / 2;
-                    int durationY = slotY + SLOT_SIZE + fontRegularMetrics.getHeight();
-                    backBufferGraphics.drawString(durationText, durationX, durationY);
-                }
             }
         }
     }
