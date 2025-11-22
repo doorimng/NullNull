@@ -13,7 +13,8 @@ import engine.GameSettings;
 import engine.GameState;
 import engine.AchievementManager;
 import engine.SoundManager;
-import entity.BulletEmitter; // 보스 로직에 필요
+import engine.BossTimer; // Add this import
+import entity.BulletEmitter;
 import entity.*;
 
 /**
@@ -105,6 +106,10 @@ public class BossScreen extends Screen {
     /** Maximum times the invulnerable message can be shown. */
     private static final int MAX_INVULNERABLE_MSG_SHOWS = 3;
 
+    /** Boss Timer */
+    private BossTimer bossTimer;
+    private boolean isTimerStarted;
+
     /**
      * Constructor, establishes the properties of the screen.
      *
@@ -134,6 +139,10 @@ public class BossScreen extends Screen {
         this.shipTypeP1 = shipTypeP1;
         this.shipTypeP2 = shipTypeP2;
         this.tookDamageThisLevel = false;
+
+        // Initialize BossTimer
+        this.bossTimer = new BossTimer(System::currentTimeMillis);
+        this.isTimerStarted = false;
     }
 
     /**
@@ -147,6 +156,9 @@ public class BossScreen extends Screen {
 
         // Start background music
         SoundManager.startBackgroundMusic(SOUND_BGM);
+
+        // Start Boss Timer
+        // this.bossTimer.start(this.state.getLevel());
 
         // 1. Create player ships
         this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30, Entity.Team.PLAYER1, shipTypeP1, this.state);
@@ -270,6 +282,10 @@ public class BossScreen extends Screen {
 
         if (!this.isPaused) {
             if (this.inputDelay.checkFinished() && !this.levelFinished) {
+                if (!isTimerStarted) {
+                    this.bossTimer.start(this.state.getLevel());
+                    isTimerStarted = true;
+                }
                 handlePlayerInputAndShooting();
                 updateShips();
                 updateBossAndMinions();
@@ -284,6 +300,9 @@ public class BossScreen extends Screen {
                 // 게임 오버 시퀀스 트리거
                 this.levelFinished = true;
                 this.screenFinishedCooldown.reset();
+
+                // 타이머 정지
+                this.bossTimer.stop();
 
                 // 음악 멈추고 패배 사운드 재생
                 SoundManager.stopAllMusic(); // BGM 중지
@@ -431,6 +450,9 @@ public class BossScreen extends Screen {
         if (this.boss != null && this.boss.getHp() <= 0 && !this.levelFinished) {
             bossScreenLogger.info("Boss defeated!");
 
+            // 타이머 정지
+            this.bossTimer.stop();
+
             // Recycle entities
             BulletPool.recycle(this.bullets);
             this.bullets.clear();
@@ -467,7 +489,7 @@ public class BossScreen extends Screen {
 
         // Screen transition
         if (this.levelFinished && this.screenFinishedCooldown.checkFinished() && !achievementManager.hasPendingToasts() ) {
-                this.isRunning = false;
+            this.isRunning = false;
         }
     }
 
@@ -515,7 +537,8 @@ public class BossScreen extends Screen {
         }
 
         // Draw Top UI (Score, Lives, Coins)
-        drawManager.drawScore(this, state.getScore());
+//        drawManager.drawScore(this, state.getScore());
+        drawManager.drawBossTimer(this, this.bossTimer.getDuration());
         drawManager.drawLives(this, state.getLivesRemaining(), state.isCoop());
         drawManager.drawCoins(this, state.getCoins());
         drawManager.drawLevel(this, this.state.getLevel());
@@ -525,6 +548,9 @@ public class BossScreen extends Screen {
         if (this.boss != null) {
             drawManager.drawBossHPBar(this, this.boss.getHp(), this.boss.getMaxHp());
         }
+
+        // Draw Boss Timer
+        drawManager.drawBossTimer(this, this.bossTimer.getDuration());
 
         // Draw Minion count
         if (this.minionFormation != null) {
