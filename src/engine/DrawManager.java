@@ -1649,6 +1649,8 @@ public final class DrawManager {
         final int SLOT_SIZE = 40;
         final int SLOT_SPACING = 5;
         final int BORDER_WIDTH = 2;
+        final int BLINK_THRESHOLD_MS = 1000;
+        final int BLINK_INTERVAL_MS = 250;
 
         for (int i = 0; i < inventory.getMaxSlots(); i++) {
             int slotX = positionX + i * (SLOT_SIZE + SLOT_SPACING);
@@ -1661,10 +1663,27 @@ public final class DrawManager {
             // Draw slot border
             ItemEffect.ItemEffectType itemType = inventory.getSlot(i);
             if (itemType != null) {
-                backBufferGraphics.setColor(Color.GREEN);
-            } else {
-                backBufferGraphics.setColor(Color.GRAY);
+                int remainingTime = inventory.getRemainingDuration(i);
+
+
+                if (remainingTime > 0 && remainingTime <= BLINK_THRESHOLD_MS) {
+
+                    boolean showBorder = (System.currentTimeMillis() / BLINK_INTERVAL_MS) % 2 == 0;
+                    if (showBorder) {
+                        backBufferGraphics.setColor(Color.GREEN);}
+                    else {
+                        backBufferGraphics.setColor(Color.GRAY);}
+                }
+
+
+                    else {
+                        backBufferGraphics.setColor(Color.GREEN);
+                    }
+
             }
+            else {
+                        backBufferGraphics.setColor(Color.GRAY);
+                    }
             backBufferGraphics.drawRect(slotX, slotY, SLOT_SIZE, SLOT_SIZE);
             backBufferGraphics.drawRect(slotX + 1, slotY + 1, SLOT_SIZE - 2, SLOT_SIZE - 2);
 
@@ -1677,7 +1696,7 @@ public final class DrawManager {
                 String itemText = "";
                 switch (itemType) {
                     case TRIPLESHOT:
-                        itemText = "x3";
+                        itemText = "+3";
                         break;
                     case SCOREBOOST:
                         itemText = "x2";
