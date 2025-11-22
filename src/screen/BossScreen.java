@@ -7,12 +7,7 @@ import java.util.Collections;
 import java.util.logging.Logger;
 import java.util.function.IntSupplier;
 
-import engine.Cooldown;
-import engine.Core;
-import engine.GameSettings;
-import engine.GameState;
-import engine.AchievementManager;
-import engine.SoundManager;
+import engine.*;
 import entity.BulletEmitter; // 보스 로직에 필요
 import entity.*;
 
@@ -105,6 +100,8 @@ public class BossScreen extends Screen {
     /** Maximum times the invulnerable message can be shown. */
     private static final int MAX_INVULNERABLE_MSG_SHOWS = 3;
 
+    private ItemInventory inventory;
+
     /**
      * Constructor, establishes the properties of the screen.
      *
@@ -142,6 +139,11 @@ public class BossScreen extends Screen {
     @Override
     public final void initialize() {
         super.initialize();
+        if (this.inventory != null) {
+            this.inventory.clear();
+        } else {
+            this.inventory = new ItemInventory(this.state, 0);
+        }
 
         state.clearAllEffects();
 
@@ -218,6 +220,9 @@ public class BossScreen extends Screen {
         this.boss = new Boss(bossX, bossY, this.width,
                 emitter, minionAlive, spawnHP1Group,
                 spawnHP2Group, clearShield, onPhase2StartCallback);
+
+        //add inventory
+        this.inventory = new ItemInventory(this.state, 0);
 
         // 4. Cooldowns and Sets
         this.screenFinishedCooldown = Core.getCooldown(SCREEN_CHANGE_INTERVAL);
@@ -419,6 +424,9 @@ public class BossScreen extends Screen {
         manageCollisions();
         cleanBullets();
         cleanItems();
+        if (this.inventory != null) {
+            this.inventory.update();
+        }
         manageItemPickups();
 
         state.updateEffects();
@@ -520,6 +528,9 @@ public class BossScreen extends Screen {
         drawManager.drawCoins(this, state.getCoins());
         drawManager.drawLevel(this, this.state.getLevel());
         drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
+        if (this.inventory != null && this.inputDelay.checkFinished()) {
+            drawManager.drawItemInventory(this, this.inventory, 20, SEPARATION_LINE_HEIGHT + 10);
+        }
 
         // Draw Boss HP Bar
         if (this.boss != null) {
@@ -599,10 +610,42 @@ public class BossScreen extends Screen {
                     continue;
                 }
                 if (checkCollision(item, ship) && !collected.contains(item)) {
+                    // Check if it's a duration item
+                    boolean isDurationItem = item.getType().equals("TRIPLESHOT") ||
+                            item.getType().equals("SCOREBOOST") ||
+                            item.getType().equals("BULLETSPEEDUP");
+
+                    // If duration item and inventory full, skip pickup
+                    if (isDurationItem && inventory != null && inventory.isFull()) {
+                        this.logger.info("Player " + ship.getPlayerId() + " inventory full, cannot pick up: " + item.getType());
+                        continue; // Cannot pick up
+                    }
                     collected.add(item);
                     bossScreenLogger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
                     SoundManager.playOnce(SOUND_HOVER);
                     item.applyEffect(getGameState(), ship.getPlayerId());
+
+                    boolean applied = item.applyEffect(getGameState(), ship.getPlayerId());
+
+                    // If successfully applied duration item, add to inventory
+                    if (applied && isDurationItem && inventory != null) {
+                        ItemEffect.ItemEffectType effectType = null;
+                        switch (item.getType()) {
+                            case "TRIPLESHOT":
+                                effectType = ItemEffect.ItemEffectType.TRIPLESHOT;
+                                break;
+                            case "SCOREBOOST":
+                                effectType = ItemEffect.ItemEffectType.SCOREBOOST;
+                                break;
+                            case "BULLETSPEEDUP":
+                                effectType = ItemEffect.ItemEffectType.BULLETSPEEDUP;
+                                break;
+                        }
+
+                        if (effectType != null) {
+                            inventory.addItem(effectType);
+                        }
+                    }
                 }
             }
         }

@@ -39,7 +39,7 @@ public final class Core {
     private static Handler fileHandler;
     private static ConsoleHandler consoleHandler;
     private static int NUM_LEVELS; // Total number of levels
-    private static int currentLevel = 1 ;
+    private static int currentLevel = 6 ;
 
     /**
      * Test implementation.
