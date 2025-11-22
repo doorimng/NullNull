@@ -7,9 +7,13 @@ public class ItemEffect {
     private static final Logger logger = Core.getLogger();
 
     public enum ItemEffectType {
-        TRIPLESHOT,
-        SCOREBOOST,
-        BULLETSPEEDUP
+        NONE(0),
+        TRIPLESHOT(1),
+        SCOREBOOST(2),
+        BULLETSPEEDUP(3);
+
+        public final int id;
+        ItemEffectType(int id) { this.id = id; }
     }
 
     /*
@@ -139,6 +143,9 @@ public class ItemEffect {
             return false;
         }
         int playerIndex = getPlayerIndex(playerId);
+
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
 //        if (gameState.hasActiveDurationItem(playerIndex)) {
 //            return false;
 //        }
@@ -146,6 +153,7 @@ public class ItemEffect {
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.TRIPLESHOT, effectValue, duration);
         logger.info("[ItemEffect - TRIPLESHOT] Player " + playerId + " applied for " + duration + "s.");
+        gameState.activeDuringItem = 1 ;
         return true;
     }
 
@@ -158,9 +166,13 @@ public class ItemEffect {
         }
         final int playerIndex = getPlayerIndex(playerId);
 
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
+
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.SCOREBOOST, effectValue, duration);
         logger.info("[ItemEffect - SCOREBOOST] Player " + playerId + " applied for " + duration + "s. Score gain will be multiplied by " + effectValue + ".");
+        gameState.activeDuringItem = 2 ;
         return true;
     }
 
@@ -176,9 +188,13 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
+
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.BULLETSPEEDUP, effectValue, duration);
         logger.info("[ItemEffect - BULLETSPEEDUP] Player " + playerId + " applied for " + duration + "s.");
+        gameState.activeDuringItem = 3 ;
         return true;
     }
     public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration) {
@@ -211,6 +227,7 @@ public class ItemEffect {
 
         // 사용 여부를 반환해주세요.
         int playerIndex = getPlayerIndex(playerId) ;
-        return gameState.hasActiveDurationItem(playerIndex);
+
+        return gameState.getActiveDurationItem(playerIndex) != 0;
     }
 }

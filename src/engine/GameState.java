@@ -3,8 +3,10 @@ package engine;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
+
 import engine.ItemEffect.ItemEffectType;
-import screen.GameScreen;
+import entity.Item;
 
 /**
  * Implements an object that stores the state of the game between levels -
@@ -16,7 +18,7 @@ import screen.GameScreen;
  */
 public class GameState {
 
-    private static final java.util.logging.Logger logger = Core.getLogger();
+    private static final Logger logger = Core.getLogger();
 
     // 2P mode: number of players used for shared lives in co-op
 	public static final int NUM_PLAYERS = 2; // adjust later if needed
@@ -49,10 +51,7 @@ public class GameState {
         }
     }
 
-
-
-
-
+    public int activeDuringItem = 0 ;
 
     /** Each player has all effect types always initialized (inactive at start). */
     private final Map<Integer, Map<ItemEffectType, EffectState>> playerEffects = new HashMap<>();
@@ -169,7 +168,7 @@ public class GameState {
 	public void addScore(final int p, final int delta) {
 		int realDelta = delta;
 		// If ScoreBoost item active, score gain is doubled.
-        Integer multiplier = getEffectValue(p, ItemEffect.ItemEffectType.SCOREBOOST);
+        Integer multiplier = getEffectValue(p, ItemEffectType.SCOREBOOST);
         if (multiplier != null) {
             realDelta = delta * multiplier;
             logger.info("[GameState] Player " + (p + 1) + " ScoreBoost active (x" + multiplier + "). Score changed from " + delta + " to " + realDelta);
@@ -401,10 +400,10 @@ public class GameState {
 
     /**
      * @param playerindex 플레이어 상태 (1p/2p) => (제거 요망)
-     * @return 현재 인벤토리에 아이템을 가지고 있는지 여부
+     * @return 현재 인벤토리에 가지고있는 아이템 고유 번호 (0 : None / 1 : TripleShot / 2 : ScoreBoost / 3 : BulletSpeedUp)
      * */
-    public boolean hasActiveDurationItem(int playerindex) {
-        return true ;
+    public int getActiveDurationItem(int playerindex) {
+        return activeDuringItem ;
     }
 
     /**

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 public class ItemEffectTest {
 
+    private ItemEffectType mockItemEffectType ;
     private GameState mockGameState ;
     private final int playerId = 1 ;
     private final int playerIndex = 0 ;
@@ -28,7 +29,7 @@ public class ItemEffectTest {
     @Test
     void UseItemFailTest() {
         // given : 기존에 아이템이 없다고 가정
-        when(mockGameState.hasActiveDurationItem(playerIndex)).thenReturn(false);
+        when(mockGameState.getActiveDurationItem(playerIndex)).thenReturn(0);
 
         // when : 아이템 사용 시도
         boolean result = ItemEffect.useItem(mockGameState, playerId);
@@ -44,7 +45,7 @@ public class ItemEffectTest {
     @Test
     void GetFirstItemTest() {
         // given : 기존에 아이템이 없다고 가정
-        when(mockGameState.hasActiveDurationItem(playerIndex)).thenReturn(false);
+        when(mockGameState.getActiveDurationItem(playerIndex)).thenReturn(0);
 
         // when : 아이템을 얻음
         boolean result = ItemEffect.applyTripleShot(mockGameState, playerId, 1, 10);
@@ -59,16 +60,31 @@ public class ItemEffectTest {
      * 인벤토리에 아이템이 있을 때 획득했을 경우 */
     @DisplayName("이후 아이템 획득 후 등록 로직")
     @Test
-    void GetNextItemTest() {
-        // given : 기존에 아이템이 있다고 가정
-        when(mockGameState.hasActiveDurationItem(playerIndex)).thenReturn(true) ;
+    void GetNextSameItemTest() {
+        // given : 기존에 1번 아이템이 있다고 가정
+        when(mockGameState.getActiveDurationItem(playerIndex)).thenReturn(1) ;
 
-        // when : 아이템을 얻음
+        // when : 1번 아이템을 얻음
+        boolean result = ItemEffect.applyTripleShot(mockGameState, playerId, 1, 10);
+
+        // then : 추가 아이템을 획득해야 함 (획득 결과가 True)
+        assertTrue(result, "아이템이 이미 있고 그 아이템과 똑같은 아이템을 얻었다면 획득에 성공해야 합니다.");
+    }
+
+    /**
+     * [인벤토리 아이템 표시 UI]
+     * 인벤토리에 아이템이 있을 때 그 아이템과 다른 아이템을 획득했을 경우 */
+    @DisplayName("이후 아이템 획득 후 다른 아이템 등록 로직")
+    @Test
+    void GetNextDifferentItemTest() {
+        // given : 기존에 2번 아이템이 있다고 가정
+        when(mockGameState.getActiveDurationItem(playerIndex)).thenReturn(2) ;
+
+        // when : 1번 아이템을 얻음
         boolean result = ItemEffect.applyTripleShot(mockGameState, playerId, 1, 10);
 
         // then : 추가 아이템을 획득하지 않아야 함 (획득 결과가 False)
-        assertFalse(result, "아이템이 이미 있을 때는 획득에 실패해야 합니다.");
-        verify(mockGameState, never()).addEffect(anyInt(), any(ItemEffectType.class), anyInt(), anyInt());
+        assertFalse(result, "아이템이 이미 있고 그 아이템과 다른 아이템을 얻었다면 획득에 실패해야 합니다.");
     }
 
     /**
@@ -78,7 +94,7 @@ public class ItemEffectTest {
     @Test
     void UseItemTest() {
         // given : 기존에 아이템이 있다고 가정
-        when(mockGameState.hasActiveDurationItem(playerIndex)).thenReturn(true) ;
+        when(mockGameState.getActiveDurationItem(playerIndex)).thenReturn(1) ;
 
         // when : 아이템을 사용함
         boolean result = ItemEffect.useItem(mockGameState, playerId) ;
