@@ -144,11 +144,9 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
-//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-//                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
-//        if (gameState.hasActiveDurationItem(playerIndex)) {
-//            return false;
-//        }
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
+
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.TRIPLESHOT, effectValue, duration);
@@ -166,8 +164,8 @@ public class ItemEffect {
         }
         final int playerIndex = getPlayerIndex(playerId);
 
-//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-//                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.SCOREBOOST, effectValue, duration);
@@ -188,8 +186,8 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
-//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-//                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.BULLETSPEEDUP, effectValue, duration);

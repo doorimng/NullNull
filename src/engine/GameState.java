@@ -319,8 +319,12 @@ public class GameState {
         if (effects == null) return false;
 
         EffectState state = effects.get(type);
-        if (state == null || !state.active) return false;
-
+//        if (state == null || !state.active) return false;
+        if (state == null) return false;
+        else if (!state.active) {
+            setActiveDuringItem(0);
+            return false;
+        }
         return !state.cooldown.checkFinished();
     }
 
