@@ -100,7 +100,7 @@ public class BossScreen extends Screen {
     /** Maximum times the invulnerable message can be shown. */
     private static final int MAX_INVULNERABLE_MSG_SHOWS = 3;
 
-    private ItemInventory inventory;
+
 
     /**
      * Constructor, establishes the properties of the screen.
@@ -603,54 +603,7 @@ public class BossScreen extends Screen {
      * Manages pickups between player and items.
      */
     private void manageItemPickups() {
-        Set<Item> collected = new HashSet<>();
-        for (Item item : this.items) {
-            for (Ship ship : this.ships) {
-                if (ship == null) {
-                    continue;
-                }
-                if (checkCollision(item, ship) && !collected.contains(item)) {
-                    // Check if it's a duration item
-                    boolean isDurationItem = item.getType().equals("TRIPLESHOT") ||
-                            item.getType().equals("SCOREBOOST") ||
-                            item.getType().equals("BULLETSPEEDUP");
-
-                    // If duration item and inventory full, skip pickup
-                    if (isDurationItem && inventory != null && inventory.isFull()) {
-                        this.logger.info("Player " + ship.getPlayerId() + " inventory full, cannot pick up: " + item.getType());
-                        continue; // Cannot pick up
-                    }
-                    collected.add(item);
-                    bossScreenLogger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
-                    SoundManager.playOnce(SOUND_HOVER);
-                    item.applyEffect(getGameState(), ship.getPlayerId());
-
-                    boolean applied = item.applyEffect(getGameState(), ship.getPlayerId());
-
-                    // If successfully applied duration item, add to inventory
-                    if (applied && isDurationItem && inventory != null) {
-                        ItemEffect.ItemEffectType effectType = null;
-                        switch (item.getType()) {
-                            case "TRIPLESHOT":
-                                effectType = ItemEffect.ItemEffectType.TRIPLESHOT;
-                                break;
-                            case "SCOREBOOST":
-                                effectType = ItemEffect.ItemEffectType.SCOREBOOST;
-                                break;
-                            case "BULLETSPEEDUP":
-                                effectType = ItemEffect.ItemEffectType.BULLETSPEEDUP;
-                                break;
-                        }
-
-                        if (effectType != null) {
-                            inventory.addItem(effectType);
-                        }
-                    }
-                }
-            }
-        }
-        this.items.removeAll(collected);
-        ItemPool.recycle(collected);
+        manageItemPickups(this.items, this.ships, this.state);
     }
 
     /**
@@ -667,7 +620,6 @@ public class BossScreen extends Screen {
                             && !ship.isDestroyed()
                             && checkCollision(bullet, ship)
                             && !this.levelFinished) {
-
                         recyclable.add(bullet);
                         drawManager.triggerExplosion(
                                 ship.getPositionX(),
@@ -766,24 +718,7 @@ public class BossScreen extends Screen {
         BulletPool.recycle(recyclable);
     }
 
-    /**
-     * Checks if two entities are colliding.
-     *
-     * @param a First entity.
-     * @param b Second entity.
-     * @return Result of the collision test.
-     */
-    private static boolean checkCollision(final Entity a, final Entity b) {
-        int centerAX = a.getPositionX() + a.getWidth() / 2;
-        int centerAY = a.getPositionY() + a.getHeight() / 2;
-        int centerBX = b.getPositionX() + b.getWidth() / 2;
-        int centerBY = b.getPositionY() + b.getHeight() / 2;
-        int maxDistanceX = a.getWidth() / 2 + b.getWidth() / 2;
-        int maxDistanceY = a.getHeight() / 2 + b.getHeight() / 2;
-        int distanceX = Math.abs(centerAX - centerBX);
-        int distanceY = Math.abs(centerAY - centerBY);
-        return distanceX < maxDistanceX && distanceY < maxDistanceY;
-    }
+
 
     /**
      * Returns a GameState object representing the status of the game.

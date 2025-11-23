@@ -144,8 +144,8 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
-        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
+//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+//                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
 //        if (gameState.hasActiveDurationItem(playerIndex)) {
 //            return false;
 //        }
@@ -166,8 +166,8 @@ public class ItemEffect {
         }
         final int playerIndex = getPlayerIndex(playerId);
 
-        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
+//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+//                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.SCOREBOOST, effectValue, duration);
@@ -188,8 +188,8 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
-        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
-                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
+//        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+//                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
 
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.BULLETSPEEDUP, effectValue, duration);
@@ -197,17 +197,7 @@ public class ItemEffect {
         gameState.setActiveDuringItem(3);
         return true;
     }
-    public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration) {
-        return applyTripleShot(gameState, playerId, effectValue, duration, null);
-    }
 
-    public static boolean applyScoreBoost(final GameState gameState, final int playerId, int effectValue, int duration) {
-        return applyScoreBoost(gameState, playerId, effectValue, duration, null);
-    }
-
-    public static boolean applyBulletSpeedUp(final GameState gameState, final int playerId, int effectValue, int duration) {
-        return applyBulletSpeedUp(gameState, playerId, effectValue, duration, null);
-    }
     /**
      * Converts a playerId (unknown : 0, player1 : 1, player2 : 2)
      * to the corresponding array index.
