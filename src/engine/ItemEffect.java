@@ -198,6 +198,18 @@ public class ItemEffect {
         return true;
     }
 
+    public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration) {
+        return applyTripleShot(gameState, playerId, effectValue, duration, null);
+    }
+
+    public static boolean applyScoreBoost(final GameState gameState, final int playerId, int effectValue, int duration) {
+        return applyScoreBoost(gameState, playerId, effectValue, duration, null);
+    }
+
+    public static boolean applyBulletSpeedUp(final GameState gameState, final int playerId, int effectValue, int duration) {
+        return applyBulletSpeedUp(gameState, playerId, effectValue, duration, null);
+    }
+
     /**
      * Converts a playerId (unknown : 0, player1 : 1, player2 : 2)
      * to the corresponding array index.
