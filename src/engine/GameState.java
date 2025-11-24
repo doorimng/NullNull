@@ -3,8 +3,9 @@ package engine;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
+
 import engine.ItemEffect.ItemEffectType;
-import screen.GameScreen;
 
 /**
  * Implements an object that stores the state of the game between levels -
@@ -16,7 +17,7 @@ import screen.GameScreen;
  */
 public class GameState {
 
-    private static final java.util.logging.Logger logger = Core.getLogger();
+    private static final Logger logger = Core.getLogger();
 
     // 2P mode: number of players used for shared lives in co-op
 	public static final int NUM_PLAYERS = 2; // adjust later if needed
@@ -49,10 +50,8 @@ public class GameState {
         }
     }
 
-
-
-
-
+    private int activeDuringItem = 0 ;
+    public void setActiveDuringItem(int value) { this.activeDuringItem = value; }
 
     /** Each player has all effect types always initialized (inactive at start). */
     private final Map<Integer, Map<ItemEffectType, EffectState>> playerEffects = new HashMap<>();
@@ -169,7 +168,7 @@ public class GameState {
 	public void addScore(final int p, final int delta) {
 		int realDelta = delta;
 		// If ScoreBoost item active, score gain is doubled.
-        Integer multiplier = getEffectValue(p, ItemEffect.ItemEffectType.SCOREBOOST);
+        Integer multiplier = getEffectValue(p, ItemEffectType.SCOREBOOST);
         if (multiplier != null) {
             realDelta = delta * multiplier;
             logger.info("[GameState] Player " + (p + 1) + " ScoreBoost active (x" + multiplier + "). Score changed from " + delta + " to " + realDelta);
@@ -320,8 +319,12 @@ public class GameState {
         if (effects == null) return false;
 
         EffectState state = effects.get(type);
-        if (state == null || !state.active) return false;
-
+//        if (state == null || !state.active) return false;
+        if (state == null) return false;
+        else if (!state.active) {
+            setActiveDuringItem(0);
+            return false;
+        }
         return !state.cooldown.checkFinished();
     }
 
@@ -398,4 +401,37 @@ public class GameState {
             clearEffects(p);
         }
     }
+
+    /**
+     * @param playerindex 플레이어 상태 (1p/2p) => (제거 요망)
+     * @return 현재 인벤토리에 가지고있는 아이템 고유 번호 (0 : None / 1 : TripleShot / 2 : ScoreBoost / 3 : BulletSpeedUp)
+     * */
+    public int getActiveDurationItem(int playerindex) {
+        return activeDuringItem ;
+    }
+
+    /**
+     * Gets remaining duration in milliseconds for a specific effect
+     *
+     * @param playerIndex
+     *            Index of the player (0 or 1)
+     * @param type
+     *            Type of effect to check
+     * @return
+     *            Remaining duration in ms, or 0 if not active
+     */
+    public int getEffectDuration(int playerIndex, ItemEffectType type) {
+        if (playerIndex < 0 || playerIndex >= NUM_PLAYERS) return 0;
+
+        Map<ItemEffectType, EffectState> effects = playerEffects.get(playerIndex);
+        if (effects == null) return 0;
+
+        EffectState state = effects.get(type);
+        if (state == null || !state.active || state.cooldown == null) return 0;
+
+        return state.cooldown.getDuration();
+    }
+
+
+
 }

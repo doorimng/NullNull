@@ -1,13 +1,18 @@
 package screen;
 
 import java.awt.Insets;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import engine.Cooldown;
-import engine.Core;
-import engine.DrawManager;
-import engine.InputManager;
+import engine.*;
+import entity.Entity;
+import entity.Item;
+import entity.ItemPool;
+import entity.Ship;
+
+
 
 /**
  * Implements a generic screen.
@@ -42,6 +47,9 @@ public class Screen {
 	protected boolean isRunning;
 	/** What kind of screen goes next. */
 	protected int returnCode;
+
+    /** Item inventory for player (null for non-game screens) */
+    protected ItemInventory inventory;
 
 	/**
 	 * Constructor, establishes the properties of the screen.
@@ -122,4 +130,116 @@ public class Screen {
 	public final int getHeight() {
 		return this.height;
 	}
+
+    /**
+     * Initializes player inventory
+     * Should be called in initialize() of GameScreen and BossScreen
+     *
+     * @param gameState GameState instance
+     * @param playerIndex Player index (0 for single player)
+     */
+    protected void initializeInventory(GameState gameState, int playerIndex) {
+        this.inventory = new ItemInventory(gameState, playerIndex);
+    }
+
+    /**
+     * Updates inventory (removes expired items)
+     * Should be called in update() of GameScreen and BossScreen
+     */
+    protected void updateInventory() {
+        if (inventory != null) {
+            inventory.update();
+        }
+    }
+
+    /**
+     * Draws player's item inventory
+     * Common method to avoid code duplication in GameScreen and BossScreen
+     * Just calls DrawManager's method
+     *
+     * @param positionX X position for inventory display
+     * @param positionY Y position for inventory display
+     */
+    protected void drawInventory(int positionX, int positionY) {
+        if (inventory != null) {
+            drawManager.drawItemInventory(this, inventory, positionX, positionY);
+        }
+    }
+
+    /**
+     * Manages item pickups between player ships and items
+     */
+    /**
+     * Manages item pickups between player ships and items
+     */
+    protected void manageItemPickups(Set<Item> items, Ship[] ships, GameState gameState) {
+        Set<Item> collected = new HashSet<>();
+
+        for (Item item : items) {
+            for (Ship ship : ships) {
+                if (ship == null) continue;
+
+                if (checkCollision(item, ship) && !collected.contains(item)) {
+                    collected.add(item);
+                    logger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
+                    SoundManager.playOnce("sound/hover.wav");
+
+                    boolean applied = item.applyEffect(gameState, ship.getPlayerId());
+
+                    if (applied && isDurationItem(item.getType())) {
+                        ItemEffect.ItemEffectType effectType = getEffectTypeFromItem(item.getType());
+                        if (effectType != null && inventory != null) {
+                            inventory.addItem(effectType);
+                        }
+                    }
+                }
+            }
+        }
+
+        items.removeAll(collected);
+        ItemPool.recycle(collected);
+    }
+
+
+    /**
+     * Checks if two entities are colliding
+     */
+    public boolean checkCollision(final Entity a, final Entity b) {
+        int centerAX = a.getPositionX() + a.getWidth() / 2;
+        int centerAY = a.getPositionY() + a.getHeight() / 2;
+        int centerBX = b.getPositionX() + b.getWidth() / 2;
+        int centerBY = b.getPositionY() + b.getHeight() / 2;
+        int maxDistanceX = a.getWidth() / 2 + b.getWidth() / 2;
+        int maxDistanceY = a.getHeight() / 2 + b.getHeight() / 2;
+        int distanceX = Math.abs(centerAX - centerBX);
+        int distanceY = Math.abs(centerAY - centerBY);
+        return distanceX < maxDistanceX && distanceY < maxDistanceY;
+    }
+
+    /**
+     * Checks if item is a duration-based item
+     */
+    private boolean isDurationItem(String itemType) {
+        return itemType.equals("TRIPLESHOT")
+                || itemType.equals("SCOREBOOST")
+                || itemType.equals("BULLETSPEEDUP");
+    }
+
+    /**
+     * Converts item type string to ItemEffectType enum
+     */
+    private ItemEffect.ItemEffectType getEffectTypeFromItem(String itemType) {
+        switch (itemType) {
+            case "TRIPLESHOT":
+                return ItemEffect.ItemEffectType.TRIPLESHOT;
+            case "SCOREBOOST":
+                return ItemEffect.ItemEffectType.SCOREBOOST;
+            case "BULLETSPEEDUP":
+                return ItemEffect.ItemEffectType.BULLETSPEEDUP;
+            default:
+                return null;
+        }
+    }
+
+
 }

@@ -191,6 +191,7 @@ public class GameScreen extends Screen {
     public final void initialize() {
         super.initialize();
 
+
         state.clearAllEffects();
 
         // Start background music for gameplay
@@ -211,6 +212,7 @@ public class GameScreen extends Screen {
         } else {
             this.ships[1] = null; // ensuring there's no P2 ship in 1P mode
         }
+
 
         this.enemyShipSpecialCooldown = Core.getVariableCooldown(BONUS_SHIP_INTERVAL, BONUS_SHIP_VARIANCE);
         this.enemyShipSpecialCooldown.reset();
@@ -233,6 +235,8 @@ public class GameScreen extends Screen {
 
         this.reviveManager = new ReviveManager(this.state);
         this.revivePhase = RevivePhase.PLAYING;
+
+        initializeInventory(state, 0);
 
     }
 
@@ -394,7 +398,9 @@ public class GameScreen extends Screen {
 
             // Item Entity Code
             cleanItems();
+
             manageItemPickups();
+            updateInventory();
 
             // check active item affects
             state.updateEffects();
@@ -493,8 +499,10 @@ public class GameScreen extends Screen {
         drawManager.drawLevel(this, this.state.getLevel());
 		drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
         drawManager.drawShipCount(this, enemyShipFormation.getShipCount());
+        drawInventory(40, SEPARATION_LINE_HEIGHT-40);
 
-		if (!this.inputDelay.checkFinished()) {
+
+        if (!this.inputDelay.checkFinished()) {
 			int countdown = (int) ((INPUT_DELAY - (System.currentTimeMillis() - this.gameStartTime)) / 1000);
 			drawManager.drawCountDown(this, this.state.getLevel(), countdown, this.bonusLife);
 			drawManager.drawHorizontalLine(this, this.height / 2 - this.height / 12);
@@ -563,21 +571,7 @@ public class GameScreen extends Screen {
      * Manages pickups between player and items.
      */
     private void manageItemPickups() {
-        Set<Item> collected = new HashSet<Item>();
-        for (Item item : this.items) {
-
-            for(Ship ship: this.ships) {
-                if(ship == null) continue;
-                if (checkCollision(item, ship) && !collected.contains(item)) {
-                    collected.add(item);
-                    this.logger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
-                    SoundManager.playOnce("sound/hover.wav");
-                    item.applyEffect(getGameState(), ship.getPlayerId());
-                }
-            }
-        }
-        this.items.removeAll(collected);
-        ItemPool.recycle(collected);
+        manageItemPickups(this.items, this.ships, this.state);
     }
 
     /**
@@ -686,26 +680,7 @@ public class GameScreen extends Screen {
         BulletPool.recycle(recyclable);
     }
 
-    /**
-     * Checks if two entities are colliding.
-     *
-     * @param a
-     *            First entity, the bullet.
-     * @param b
-     *            Second entity, the ship.
-     * @return Result of the collision test.
-     */
-    private boolean checkCollision(final Entity a, final Entity b) {
-        int centerAX = a.getPositionX() + a.getWidth() / 2;
-        int centerAY = a.getPositionY() + a.getHeight() / 2;
-        int centerBX = b.getPositionX() + b.getWidth() / 2;
-        int centerBY = b.getPositionY() + b.getHeight() / 2;
-        int maxDistanceX = a.getWidth() / 2 + b.getWidth() / 2;
-        int maxDistanceY = a.getHeight() / 2 + b.getHeight() / 2;
-        int distanceX = Math.abs(centerAX - centerBX);
-        int distanceY = Math.abs(centerAY - centerBY);
-        return distanceX < maxDistanceX && distanceY < maxDistanceY;
-    }
+
 
     /**
      * Returns a GameState object representing the status of the game.

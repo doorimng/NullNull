@@ -15,6 +15,8 @@ import engine.AchievementManager;
 import engine.SoundManager;
 import engine.BossTimer; // Add this import
 import entity.BulletEmitter;
+import engine.*;
+import entity.BulletEmitter; // 보스 로직에 필요
 import entity.*;
 
 /**
@@ -110,6 +112,7 @@ public class BossScreen extends Screen {
     private BossTimer bossTimer;
     private boolean isTimerStarted;
 
+
     /**
      * Constructor, establishes the properties of the screen.
      *
@@ -151,6 +154,11 @@ public class BossScreen extends Screen {
     @Override
     public final void initialize() {
         super.initialize();
+        if (this.inventory != null) {
+            this.inventory.clear();
+        } else {
+            this.inventory = new ItemInventory(this.state, 0);
+        }
 
         state.clearAllEffects();
 
@@ -230,6 +238,9 @@ public class BossScreen extends Screen {
         this.boss = new Boss(bossX, bossY, this.width,
                 emitter, minionAlive, spawnHP1Group,
                 spawnHP2Group, clearShield, onPhase2StartCallback);
+
+        //add inventory
+        this.inventory = new ItemInventory(this.state, 0);
 
         // 4. Cooldowns and Sets
         this.screenFinishedCooldown = Core.getCooldown(SCREEN_CHANGE_INTERVAL);
@@ -438,6 +449,9 @@ public class BossScreen extends Screen {
         manageCollisions();
         cleanBullets();
         cleanItems();
+        if (this.inventory != null) {
+            this.inventory.update();
+        }
         manageItemPickups();
 
         state.updateEffects();
@@ -543,6 +557,9 @@ public class BossScreen extends Screen {
         drawManager.drawCoins(this, state.getCoins());
         drawManager.drawLevel(this, this.state.getLevel());
         drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
+        if (this.inventory != null && this.inputDelay.checkFinished()) {
+            drawManager.drawItemInventory(this, this.inventory, 40, SEPARATION_LINE_HEIGHT -40);
+        }
 
         // Draw Boss HP Bar
         if (this.boss != null) {
@@ -618,22 +635,7 @@ public class BossScreen extends Screen {
      * Manages pickups between player and items.
      */
     private void manageItemPickups() {
-        Set<Item> collected = new HashSet<>();
-        for (Item item : this.items) {
-            for (Ship ship : this.ships) {
-                if (ship == null) {
-                    continue;
-                }
-                if (checkCollision(item, ship) && !collected.contains(item)) {
-                    collected.add(item);
-                    bossScreenLogger.info("Player " + ship.getPlayerId() + " picked up item: " + item.getType());
-                    SoundManager.playOnce(SOUND_HOVER);
-                    item.applyEffect(getGameState(), ship.getPlayerId());
-                }
-            }
-        }
-        this.items.removeAll(collected);
-        ItemPool.recycle(collected);
+        manageItemPickups(this.items, this.ships, this.state);
     }
 
     /**
@@ -650,7 +652,6 @@ public class BossScreen extends Screen {
                             && !ship.isDestroyed()
                             && checkCollision(bullet, ship)
                             && !this.levelFinished) {
-
                         recyclable.add(bullet);
                         drawManager.triggerExplosion(
                                 ship.getPositionX(),
@@ -749,24 +750,7 @@ public class BossScreen extends Screen {
         BulletPool.recycle(recyclable);
     }
 
-    /**
-     * Checks if two entities are colliding.
-     *
-     * @param a First entity.
-     * @param b Second entity.
-     * @return Result of the collision test.
-     */
-    private static boolean checkCollision(final Entity a, final Entity b) {
-        int centerAX = a.getPositionX() + a.getWidth() / 2;
-        int centerAY = a.getPositionY() + a.getHeight() / 2;
-        int centerBX = b.getPositionX() + b.getWidth() / 2;
-        int centerBY = b.getPositionY() + b.getHeight() / 2;
-        int maxDistanceX = a.getWidth() / 2 + b.getWidth() / 2;
-        int maxDistanceY = a.getHeight() / 2 + b.getHeight() / 2;
-        int distanceX = Math.abs(centerAX - centerBX);
-        int distanceY = Math.abs(centerAY - centerBY);
-        return distanceX < maxDistanceX && distanceY < maxDistanceY;
-    }
+
 
     /**
      * Returns a GameState object representing the status of the game.
