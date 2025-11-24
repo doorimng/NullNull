@@ -7,9 +7,13 @@ public class ItemEffect {
     private static final Logger logger = Core.getLogger();
 
     public enum ItemEffectType {
-        TRIPLESHOT,
-        SCOREBOOST,
-        BULLETSPEEDUP
+        NONE(0),
+        TRIPLESHOT(1),
+        SCOREBOOST(2),
+        BULLETSPEEDUP(3);
+
+        public final int id;
+        ItemEffectType(int id) { this.id = id; }
     }
 
     /*
@@ -17,9 +21,9 @@ public class ItemEffect {
      * attempt to spend the corresponding amount of coins. If the
      * player doesn't have enough coins the effect is not applied.
      */
-    private static final int COST_TRIPLESHOT = 100;
+    private static final int COST_TRIPLESHOT = 0;
     private static final int COST_SCOREBOOST = 0;
-    private static final int COST_BULLETSPEEDUP = 75;
+    private static final int COST_BULLETSPEEDUP = 0;
 
     /**=========================SINGLE USE=================================**/
 
@@ -131,6 +135,7 @@ public class ItemEffect {
      * Returns true if purchase succeeded and effect applied, false if insufficient coins.
      */
     public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration, Integer overrideCost) {
+        logger.info("[applyTripleShot] effectValue=" + effectValue + ", duration=" + duration + ", overrideCost=" + overrideCost);
         if (gameState == null) return false;
         final int cost = (overrideCost != null) ? overrideCost : COST_TRIPLESHOT;
 
@@ -139,9 +144,14 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 1) ) return false ;
+
+
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.TRIPLESHOT, effectValue, duration);
         logger.info("[ItemEffect - TRIPLESHOT] Player " + playerId + " applied for " + duration + "s.");
+        gameState.setActiveDuringItem(1);
         return true;
     }
 
@@ -154,9 +164,13 @@ public class ItemEffect {
         }
         final int playerIndex = getPlayerIndex(playerId);
 
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 2) ) return false ;
+
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.SCOREBOOST, effectValue, duration);
         logger.info("[ItemEffect - SCOREBOOST] Player " + playerId + " applied for " + duration + "s. Score gain will be multiplied by " + effectValue + ".");
+        gameState.setActiveDuringItem(2);
         return true;
     }
 
@@ -172,11 +186,16 @@ public class ItemEffect {
         }
         int playerIndex = getPlayerIndex(playerId);
 
+        if ( !(gameState.getActiveDurationItem(playerIndex) == 0
+                || gameState.getActiveDurationItem(playerIndex) == 3) ) return false ;
+
         // apply duration
         gameState.addEffect(playerIndex, ItemEffectType.BULLETSPEEDUP, effectValue, duration);
         logger.info("[ItemEffect - BULLETSPEEDUP] Player " + playerId + " applied for " + duration + "s.");
+        gameState.setActiveDuringItem(3);
         return true;
     }
+
     public static boolean applyTripleShot(final GameState gameState, final int playerId, int effectValue, int duration) {
         return applyTripleShot(gameState, playerId, effectValue, duration, null);
     }
@@ -188,6 +207,7 @@ public class ItemEffect {
     public static boolean applyBulletSpeedUp(final GameState gameState, final int playerId, int effectValue, int duration) {
         return applyBulletSpeedUp(gameState, playerId, effectValue, duration, null);
     }
+
     /**
      * Converts a playerId (unknown : 0, player1 : 1, player2 : 2)
      * to the corresponding array index.
@@ -198,5 +218,16 @@ public class ItemEffect {
      */
     private static int getPlayerIndex(final int playerId) {
         return (playerId == 2) ? 1 : 0;
+    }
+
+    /**
+     * @return 아이템이 잘 사용되었는지 여부를 반환합니다.
+     * */
+    public static boolean useItem(final GameState gameState, final int playerId) {
+
+        // 사용 여부를 반환해주세요.
+        int playerIndex = getPlayerIndex(playerId) ;
+
+        return gameState.getActiveDurationItem(playerIndex) != 0;
     }
 }
