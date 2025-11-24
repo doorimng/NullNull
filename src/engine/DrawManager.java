@@ -819,25 +819,20 @@ public final class DrawManager {
     }
 
     /**
-     * Draws game results.
+     * Draws the score (results).
      *
-     * @param screen
-     * Screen to draw on.
-     * @param score
-     * Score obtained.
-     * @param coins
-     * Coins obtained.
-     * @param shipsDestroyed
-     * Total ships destroyed.
-     * @param accuracy
-     * Total accuracy.
-     * @param isNewRecord
-     * If the score is a new high score.
+     * @param screen Screen to draw on.
+     * @param score Score obtained.
+     * @param coins Coins obtained.
+     * @param livesRemaining Lives remaining.
+     * @param shipsDestroyed Ships destroyed.
+     * @param accuracy Accuracy.
+     * @param isNewRecord If the score is a new high score.
+     * @param isFailure True if the player failed (Game Over), False if cleared.
      */
     public void drawResults(final Screen screen, final int score,
-                            final int coins, final int livesRemaining , final int shipsDestroyed,
-                            final float accuracy, final boolean isNewRecord, final boolean accuracy1P) {
-        String scoreString = String.format("score %04d", score);
+                            final int coins, final int livesRemaining, final int shipsDestroyed,
+                            final float accuracy, final boolean isNewRecord, final boolean accuracy1P, final boolean isFailure) { // 파라미터 isFailure 추가됨
         String coinString = String.format("coins %04d", coins);
         String livesRemainingString = String.format("lives remaining %d", livesRemaining);
         String shipsDestroyedString = "enemies destroyed " + shipsDestroyed;
@@ -845,27 +840,20 @@ public final class DrawManager {
 
         int height = 4;
 
-        if (isNewRecord) {
+        // [핵심] 실패(Game Over)면 무조건 빨간색, 성공이면 하얀색
+        if (isFailure) {
             backBufferGraphics.setColor(Color.RED);
         } else {
             backBufferGraphics.setColor(Color.WHITE);
         }
 
-        drawCenteredRegularString(screen, scoreString, screen.getHeight()
-                / height);
-        drawCenteredRegularString(screen, coinString,
-                screen.getHeight() / height + fontRegularMetrics.getHeight()
-                        * 2);
-        drawCenteredRegularString(screen, livesRemainingString,
-                screen.getHeight() / height + fontRegularMetrics.getHeight()
-                        * 4);
-        drawCenteredRegularString(screen, shipsDestroyedString,
-                screen.getHeight() / height + fontRegularMetrics.getHeight()
-                        * 6);
-        // Draw accuracy for player in 1P mode
+        // 점수 표시는 삭제(Time Attack), 나머지 항목을 위로 당김
+        drawCenteredRegularString(screen, coinString, screen.getHeight() / height);
+        drawCenteredRegularString(screen, livesRemainingString, screen.getHeight() / height + fontRegularMetrics.getHeight() * 2);
+        drawCenteredRegularString(screen, shipsDestroyedString, screen.getHeight() / height + fontRegularMetrics.getHeight() * 4);
+
         if (accuracy1P) {
-            drawCenteredRegularString(screen, accuracyString, screen.getHeight()
-                    / height + fontRegularMetrics.getHeight() * 8);
+            drawCenteredRegularString(screen, accuracyString, screen.getHeight() / height + fontRegularMetrics.getHeight() * 6);
         }
     }
 
@@ -912,30 +900,34 @@ public final class DrawManager {
     }
 
     /**
-     * Draws basic content of game over screen.
+     * Draws the Game Over / Game Clear title and instructions.
      *
-     * @param screen
-     * Screen to draw on.
-     * @param acceptsInput
-     * If the screen accepts input.
+     * @param screen Screen to draw on.
+     * @param isClear True if the player cleared the level.
      */
-    public void drawGameOver(final Screen screen, final boolean acceptsInput) {
-        String gameOverString = "Game Over";
-        String continueOrExitString = "Press Space to play again, Escape to exit";
+    public void drawGameTitle(Screen screen, boolean isClear) {
+        // 1. 타이틀 텍스트 설정
+        String titleText = isClear ? "GAME CLEAR!!" : "GAME OVER";
 
-        int height = 4;
+        // 2. 타이틀 색상 및 그리기
+        if (isClear) {
+            backBufferGraphics.setColor(Color.BLUE); // 성공: 파란색
+        } else {
+            backBufferGraphics.setColor(Color.RED);  // 실패: 빨간색
+        }
+        drawCenteredBigString(screen, titleText, screen.getHeight() / 8);
 
-        backBufferGraphics.setColor(Color.GREEN);
-        drawCenteredBigString(screen, gameOverString, screen.getHeight()
-                / height - fontBigMetrics.getHeight() * 2);
+        // 3. 안내 문구 (성공/실패 상관없이 무조건 표시)
+        // 안내 문구는 흰색으로 통일
+        backBufferGraphics.setColor(Color.WHITE);
 
-        if (acceptsInput)
-            backBufferGraphics.setColor(Color.GREEN);
-        else
-            backBufferGraphics.setColor(Color.GRAY);
-        drawCenteredRegularString(screen, continueOrExitString,
+        // 문구 내용 (원하시는 대로 수정 가능)
+        String helpText = "Press SPACE to Restart, ESC to Map";
+
+        drawCenteredRegularString(screen, helpText,
                 screen.getHeight() / 2 + fontRegularMetrics.getHeight() * 10);
     }
+
     public void drawPauseOverlay(final Screen screen){
         backBufferGraphics.setColor(new Color(0,0,0,200));
         backBufferGraphics.fillRect(0, 0, screen.getWidth(), screen.getHeight());
