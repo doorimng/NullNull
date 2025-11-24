@@ -7,6 +7,14 @@ import java.util.Collections;
 import java.util.logging.Logger;
 import java.util.function.IntSupplier;
 
+import engine.Cooldown;
+import engine.Core;
+import engine.GameSettings;
+import engine.GameState;
+import engine.AchievementManager;
+import engine.SoundManager;
+import engine.BossTimer; // Add this import
+import entity.BulletEmitter;
 import engine.*;
 import entity.BulletEmitter; // 보스 로직에 필요
 import entity.*;
@@ -100,6 +108,9 @@ public class BossScreen extends Screen {
     /** Maximum times the invulnerable message can be shown. */
     private static final int MAX_INVULNERABLE_MSG_SHOWS = 3;
 
+    /** Boss Timer */
+    private BossTimer bossTimer;
+    private boolean isTimerStarted;
 
 
     /**
@@ -131,6 +142,10 @@ public class BossScreen extends Screen {
         this.shipTypeP1 = shipTypeP1;
         this.shipTypeP2 = shipTypeP2;
         this.tookDamageThisLevel = false;
+
+        // Initialize BossTimer
+        this.bossTimer = new BossTimer(System::currentTimeMillis);
+        this.isTimerStarted = false;
     }
 
     /**
@@ -149,6 +164,9 @@ public class BossScreen extends Screen {
 
         // Start background music
         SoundManager.startBackgroundMusic(SOUND_BGM);
+
+        // Start Boss Timer
+        // this.bossTimer.start(this.state.getLevel());
 
         // 1. Create player ships
         this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30, Entity.Team.PLAYER1, shipTypeP1, this.state);
@@ -265,6 +283,7 @@ public class BossScreen extends Screen {
 
     /**
      * Updates the elements on screen and checks for events.
+     * (Refactored to reduce Cognitive Complexity)
      */
     @Override
     protected final void update() {
@@ -274,49 +293,90 @@ public class BossScreen extends Screen {
         handlePauseAndMenuInput();
 
         if (!this.isPaused) {
-            if (this.inputDelay.checkFinished() && !this.levelFinished) {
-                handlePlayerInputAndShooting();
-                updateShips();
-                updateBossAndMinions();
-            }
-
-            handleCollisionsAndCleanup();
-            checkInGameAchievements();
-
-            if (!state.teamAlive() && !this.levelFinished) {
-                bossScreenLogger.info("Player team is defeated on Boss Screen.");
-
-                // 게임 오버 시퀀스 트리거
-                this.levelFinished = true;
-                this.screenFinishedCooldown.reset();
-
-                // 음악 멈추고 패배 사운드 재생
-                SoundManager.stopAllMusic(); // BGM 중지
-                SoundManager.playOnce("sound/lose.wav"); // 패배 사운드 재생
-
-                // 패배 시 즉시 엔티티 재활용
-                BulletPool.recycle(this.bullets);
-                this.bullets.clear();
-                ItemPool.recycle(items);
-                this.items.clear();
-
-                // 보스와 쫄몹 화면에서 제거
-                if (this.boss != null) {
-                    this.boss = null;
-                }
-                if (this.minionFormation != null) {
-                    for (EnemyShip minion : this.minionFormation) {
-                        minion.destroy(); // 폭발 이펙트 없이 파괴
-                    }
-                }
-            }
-
-            handleEndOfLevel();
-            updateAchievements();
+            // 복잡한 로직을 processGameLogic 함수로 위임하여 복잡도 감소
+            processGameLogic();
         }
 
         // Draw final frame
         draw();
+    }
+
+    /**
+     * 일시정지가 아닐 때 게임의 주요 로직을 처리합니다.
+     */
+    private void processGameLogic() {
+        // 1. 게임 상태(타이머, 플레이어, 적) 업데이트
+        updateGameState();
+
+        handleCollisionsAndCleanup();
+        checkInGameAchievements();
+
+        // 2. 게임 오버(패배) 조건 체크 및 처리
+        checkAndHandleGameOver();
+
+        handleEndOfLevel();
+        updateAchievements();
+    }
+
+    /**
+     * 타이머, 플레이어, 보스/쫄몹의 움직임을 업데이트합니다.
+     */
+    private void updateGameState() {
+        if (this.inputDelay.checkFinished() && !this.levelFinished) {
+            if (!isTimerStarted) {
+                this.bossTimer.start(this.state.getLevel());
+                isTimerStarted = true;
+            }
+            handlePlayerInputAndShooting();
+            updateShips();
+            updateBossAndMinions();
+        }
+    }
+
+    /**
+     * 플레이어 팀 전멸 시 게임 오버 시퀀스를 처리합니다.
+     */
+    private void checkAndHandleGameOver() {
+        if (!state.teamAlive() && !this.levelFinished) {
+            bossScreenLogger.info("Player team is defeated on Boss Screen.");
+
+            // 게임 오버 시퀀스 트리거
+            this.levelFinished = true;
+            this.screenFinishedCooldown.reset();
+
+            // 타이머 정지
+            this.bossTimer.stop();
+
+            // 음악 멈추고 패배 사운드 재생
+            SoundManager.stopAllMusic();
+            SoundManager.playOnce("sound/lose.wav");
+
+            // 리소스 정리
+            cleanupEntitiesOnLose();
+        }
+    }
+
+    /**
+     * 패배 시 엔티티(총알, 아이템, 적)를 정리합니다.
+     */
+    private void cleanupEntitiesOnLose() {
+        // 패배 시 즉시 엔티티 재활용
+        BulletPool.recycle(this.bullets);
+        this.bullets.clear();
+
+        ItemPool.recycle(items);
+        this.items.clear();
+
+        // 보스와 쫄몹 화면에서 제거
+        if (this.boss != null) {
+            this.boss = null;
+        }
+
+        if (this.minionFormation != null) {
+            for (EnemyShip minion : this.minionFormation) {
+                minion.destroy(); // 폭발 이펙트 없이 파괴
+            }
+        }
     }
 
     /** 카운트다운 사운드 처리 */
@@ -359,42 +419,56 @@ public class BossScreen extends Screen {
         }
     }
 
-    /** 플레이어 입력 및 발사 처리 */
+    /**
+     * 플레이어 입력 및 발사 처리 (리팩토링됨)
+     * 복잡도를 줄이기 위해 개별 선박 처리는 별도 함수로 위임합니다.
+     */
     private void handlePlayerInputAndShooting() {
         for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
             Ship ship = this.ships[p];
-            if (ship == null || ship.isDestroyed()) {
-                continue;
+            // 배가 없거나 파괴되었으면 스킵
+            if (ship != null && !ship.isDestroyed()) {
+                handleSingleShipInput(p, ship);
             }
+        }
+    }
 
-            boolean moveRight;
-            boolean moveLeft;
-            boolean fire;
+    /**
+     * 개별 선박의 입력, 이동, 사격을 처리합니다.
+     * (handlePlayerInputAndShooting에서 분리됨)
+     */
+    private void handleSingleShipInput(int playerIndex, Ship ship) {
+        boolean moveRight;
+        boolean moveLeft;
+        boolean fire;
 
-            if (p == 0) {
-                moveRight = inputManager.isP1RightPressed();
-                moveLeft = inputManager.isP1LeftPressed();
-                fire = inputManager.isP1ShootPressed();
-            } else {
-                moveRight = inputManager.isP2RightPressed();
-                moveLeft = inputManager.isP2LeftPressed();
-                fire = inputManager.isP2ShootPressed();
-            }
+        // 플레이어 번호에 따른 키 입력 확인
+        if (playerIndex == 0) {
+            moveRight = inputManager.isP1RightPressed();
+            moveLeft = inputManager.isP1LeftPressed();
+            fire = inputManager.isP1ShootPressed();
+        } else {
+            moveRight = inputManager.isP2RightPressed();
+            moveLeft = inputManager.isP2LeftPressed();
+            fire = inputManager.isP2ShootPressed();
+        }
 
-            boolean isRightBorder = ship.getPositionX() + ship.getWidth() + ship.getSpeed() > this.width - 1;
-            boolean isLeftBorder = ship.getPositionX() - ship.getSpeed() < 1;
+        // 화면 경계 체크
+        boolean isRightBorder = ship.getPositionX() + ship.getWidth() + ship.getSpeed() > this.width - 1;
+        boolean isLeftBorder = ship.getPositionX() - ship.getSpeed() < 1;
 
-            if (moveRight && !isRightBorder) {
-                ship.moveRight();
-            }
-            if (moveLeft && !isLeftBorder) {
-                ship.moveLeft();
-            }
+        // 이동 처리
+        if (moveRight && !isRightBorder) {
+            ship.moveRight();
+        }
+        if (moveLeft && !isLeftBorder) {
+            ship.moveLeft();
+        }
 
-            if (fire && ship.shoot(this.bullets)) {
-                SoundManager.playOnce(SOUND_SHOOT);
-                state.incBulletsShot(p);
-            }
+        // 발사 처리
+        if (fire && ship.shoot(this.bullets)) {
+            SoundManager.playOnce(SOUND_SHOOT);
+            state.incBulletsShot(playerIndex);
         }
     }
 
@@ -433,19 +507,24 @@ public class BossScreen extends Screen {
         drawManager.setLastLife(state.getLivesRemaining() == 1);
     }
 
-    /** 보스 사망 및 레벨 종료 처리 + 업적 부여 + 스크린 전환 */
+    /** * 보스 사망 및 레벨 종료 처리
+     * (복잡도 해결: 업적 계산 로직을 별도 함수로 분리함)
+     */
     private void handleEndOfLevel() {
         // End Condition: Boss HP <= 0
         if (this.boss != null && this.boss.getHp() <= 0 && !this.levelFinished) {
             bossScreenLogger.info("Boss defeated!");
 
-            // Recycle entities
+            // 타이머 정지
+            this.bossTimer.stop();
+
+            // Recycle entities (리소스 정리)
             BulletPool.recycle(this.bullets);
             this.bullets.clear();
             ItemPool.recycle(items);
             this.items.clear();
 
-            // Clear remaining minions
+            // Clear remaining minions (쫄몹 정리)
             if (this.minionFormation != null) {
                 for (EnemyShip minion : this.minionFormation) {
                     minion.destroy();
@@ -455,27 +534,43 @@ public class BossScreen extends Screen {
             this.levelFinished = true;
             this.screenFinishedCooldown.reset();
 
-            // Grant achievements
-            if (!this.tookDamageThisLevel) {
-                achievementManager.unlock("Survivor");
-            }
-            int totalHitsLanded = state.getShipsDestroyed() + this.boss.getMaxHp();
-            int totalBulletsShot = state.getBulletsShot();
-            double accuracy = 0.0;
-            if (totalBulletsShot > 0) {
-                accuracy = (double) totalHitsLanded / (double) totalBulletsShot;
-            }
-            if (accuracy >= 0.8) {
-                achievementManager.unlock("Sharpshooter");
-            }
-            if(totalBulletsShot > 0 && totalBulletsShot == totalHitsLanded){
-                achievementManager.unlock("Perfect Shooter");
-            }
+            // [핵심] 업적 부여 로직을 별도 함수로 위임하여 복잡도를 낮춤
+            grantBossVictoryAchievements();
         }
 
-        // Screen transition
-        if (this.levelFinished && this.screenFinishedCooldown.checkFinished() && !achievementManager.hasPendingToasts() ) {
-                this.isRunning = false;
+        // Screen transition (화면 전환)
+        if (this.levelFinished && this.screenFinishedCooldown.checkFinished() && !achievementManager.hasPendingToasts()) {
+            this.isRunning = false;
+        }
+    }
+
+    /**
+     * 보스 처치 시 승리 업적을 계산하고 부여합니다.
+     * (handleEndOfLevel에서 분리됨)
+     */
+    private void grantBossVictoryAchievements() {
+        // Survivor (한 대도 안 맞음)
+        if (!this.tookDamageThisLevel) {
+            achievementManager.unlock("Survivor");
+        }
+
+        // 명중률 계산
+        int totalHitsLanded = state.getShipsDestroyed() + this.boss.getMaxHp();
+        int totalBulletsShot = state.getBulletsShot();
+        double accuracy = 0.0;
+
+        if (totalBulletsShot > 0) {
+            accuracy = (double) totalHitsLanded / (double) totalBulletsShot;
+        }
+
+        // Sharpshooter (명중률 80% 이상)
+        if (accuracy >= 0.8) {
+            achievementManager.unlock("Sharpshooter");
+        }
+
+        // Perfect Shooter (명중률 100%)
+        if (totalBulletsShot > 0 && totalBulletsShot == totalHitsLanded) {
+            achievementManager.unlock("Perfect Shooter");
         }
     }
 
@@ -523,7 +618,8 @@ public class BossScreen extends Screen {
         }
 
         // Draw Top UI (Score, Lives, Coins)
-        drawManager.drawScore(this, state.getScore());
+//        drawManager.drawScore(this, state.getScore());
+        drawManager.drawBossTimer(this, this.bossTimer.getDuration());
         drawManager.drawLives(this, state.getLivesRemaining(), state.isCoop());
         drawManager.drawCoins(this, state.getCoins());
         drawManager.drawLevel(this, this.state.getLevel());
@@ -536,6 +632,9 @@ public class BossScreen extends Screen {
         if (this.boss != null) {
             drawManager.drawBossHPBar(this, this.boss.getHp(), this.boss.getMaxHp());
         }
+
+        // Draw Boss Timer
+        drawManager.drawBossTimer(this, this.bossTimer.getDuration());
 
         // Draw Minion count
         if (this.minionFormation != null) {
@@ -607,115 +706,127 @@ public class BossScreen extends Screen {
     }
 
     /**
-     * Manages collisions between bullets and entities.
+     * 총알과 엔티티 간의 충돌을 관리합니다.
+     * (복잡도 해결: 충돌 로직을 대상별로 분리함)
      */
     private void manageCollisions() {
         Set<Bullet> recyclable = new HashSet<>();
         for (Bullet bullet : this.bullets) {
             if (bullet.getSpeed() > 0) {
-                // Enemy Bullet vs Player
-                for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
-                    Ship ship = this.ships[p];
-                    if (ship != null
-                            && !ship.isDestroyed()
-                            && checkCollision(bullet, ship)
-                            && !this.levelFinished) {
-                        recyclable.add(bullet);
-                        drawManager.triggerExplosion(
-                                ship.getPositionX(),
-                                ship.getPositionY(),
-                                false,
-                                state.getLivesRemaining() == 1
-                        );
-                        ship.addHit();
-                        ship.destroy();
-                        SoundManager.playOnce(SOUND_EXPLOSION);
-                        state.decLife(p);
-                        this.tookDamageThisLevel = true;
-                        drawManager.setLastLife(state.getLivesRemaining() == 1);
-                        drawManager.setDeath(state.getLivesRemaining() == 0);
-                        bossScreenLogger.info("Hit on player " + (p + 1));
-                        break; // Bullet hits one player
-                    }
+                // 적 총알 -> 플레이어 충돌 확인
+                if (handleEnemyBulletCollision(bullet)) {
+                    recyclable.add(bullet);
                 }
             } else {
-                // Player Bullet
-                final int ownerId = bullet.getOwnerPlayerId();
-                final int pIdx = (ownerId == 2) ? 1 : 0;
-                boolean hitRegistered = false;
-
-                // Player bullet vs Minions
-                if (this.minionFormation != null) {
-                    for (EnemyShip enemyShip : this.minionFormation) {
-                        if (!enemyShip.isDestroyed() && checkCollision(bullet, enemyShip)) {
-                            recyclable.add(bullet);
-                            enemyShip.hit();
-                            hitRegistered = true;
-
-                            if (enemyShip.isDestroyed()) {
-                                int points = enemyShip.getPointValue();
-                                state.addCoins(pIdx, enemyShip.getCoinValue());
-                                drawManager.triggerExplosion(
-                                        enemyShip.getPositionX(),
-                                        enemyShip.getPositionY(),
-                                        true,
-                                        false
-                                ); // Not final explosion
-                                state.addScore(pIdx, points);
-                                state.incShipsDestroyed(pIdx);
-
-                                Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
-                                if (drop != null) {
-                                    this.items.add(drop);
-                                }
-
-                                this.minionFormation.destroy(enemyShip);
-                                SoundManager.playOnce("sound/invaderkilled.wav");
-                            }
-                            break; // Bullet hits one minion
-                        }
-                    }
-                }
-
-                if (hitRegistered) {
-                    continue; // Bullet was used on a minion
-                }
-
-                // Player bullet vs Boss
-                if (this.boss != null
-                        && this.boss.getHp() > 0
-                        && checkCollision(bullet, this.boss)) {
-
+                // 플레이어 총알 -> 적 충돌 확인
+                if (handlePlayerBulletCollision(bullet)) {
                     recyclable.add(bullet);
-
-                    if (this.boss.isInvulnerable()) {
-                        // 보스가 무적 상태일 때: 3번 미만으로 띄웠는지 확인
-                        if (this.invulnerableMsgCount < MAX_INVULNERABLE_MSG_SHOWS) {
-                            this.invulnerableMsgCooldown.reset(); // 메시지 타이머 리셋
-                            this.invulnerableMsgCount++;          // 카운터 증가
-                        }
-                    } else {
-                        // 보스가 무적이 아닐 때: 데미지 적용
-                        this.boss.onHit(1); // 1의 데미지를 줍니다.
-                    }
-
-                    // 보스가 이 총알에 의해 죽었는지 확인
-                    if (this.boss.getHp() <= 0) {
-                        // 보스 사망 시 폭발 이펙트 처리 (GameScreen 참고)
-                        drawManager.triggerExplosion(
-                                this.boss.getPositionX() + this.boss.getWidth() / 2,
-                                this.boss.getPositionY() + this.boss.getHeight() / 2,
-                                true,
-                                true
-                        );
-                        SoundManager.stop();
-                        SoundManager.playOnce(SOUND_EXPLOSION);
-                    }
                 }
             }
         }
         this.bullets.removeAll(recyclable);
         BulletPool.recycle(recyclable);
+    }
+
+    /**
+     * 적 총알이 플레이어에게 맞았는지 확인하고 처리합니다.
+     */
+    private boolean handleEnemyBulletCollision(Bullet bullet) {
+        for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
+            Ship ship = this.ships[p];
+            if (ship != null && !ship.isDestroyed() && checkCollision(bullet, ship) && !this.levelFinished) {
+                // 플레이어 피격 처리
+                drawManager.triggerExplosion(ship.getPositionX(), ship.getPositionY(), false, state.getLivesRemaining() == 1);
+                ship.addHit();
+                ship.destroy();
+                SoundManager.playOnce(SOUND_EXPLOSION);
+                state.decLife(p);
+                this.tookDamageThisLevel = true;
+                drawManager.setLastLife(state.getLivesRemaining() == 1);
+                drawManager.setDeath(state.getLivesRemaining() == 0);
+                bossScreenLogger.info("Hit on player " + (p + 1));
+                return true; // 충돌 발생함
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 플레이어 총알이 쫄몹이나 보스에게 맞았는지 확인하고 처리합니다.
+     */
+    private boolean handlePlayerBulletCollision(Bullet bullet) {
+        final int ownerId = bullet.getOwnerPlayerId();
+        final int pIdx = (ownerId == 2) ? 1 : 0;
+
+        // 1. 쫄몹 충돌 확인
+        if (handleMinionCollision(bullet, pIdx)) {
+            return true; // 쫄몹에 맞았으면 보스 체크 안 함
+        }
+
+        // 2. 보스 충돌 확인
+        return handleBossCollision(bullet);
+    }
+
+    /**
+     * 플레이어 총알이 쫄몹에게 맞았는지 확인합니다.
+     */
+    private boolean handleMinionCollision(Bullet bullet, int pIdx) {
+        if (this.minionFormation != null) {
+            for (EnemyShip enemyShip : this.minionFormation) {
+                if (!enemyShip.isDestroyed() && checkCollision(bullet, enemyShip)) {
+                    enemyShip.hit();
+
+                    if (enemyShip.isDestroyed()) {
+                        int points = enemyShip.getPointValue();
+                        state.addCoins(pIdx, enemyShip.getCoinValue());
+                        drawManager.triggerExplosion(enemyShip.getPositionX(), enemyShip.getPositionY(), true, false);
+                        state.addScore(pIdx, points);
+                        state.incShipsDestroyed(pIdx);
+
+                        Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
+                        if (drop != null) {
+                            this.items.add(drop);
+                        }
+
+                        this.minionFormation.destroy(enemyShip);
+                        SoundManager.playOnce("sound/invaderkilled.wav");
+                    }
+                    return true; // 충돌 발생
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 플레이어 총알이 보스에게 맞았는지 확인합니다.
+     */
+    private boolean handleBossCollision(Bullet bullet) {
+        if (this.boss != null && this.boss.getHp() > 0 && checkCollision(bullet, this.boss)) {
+            if (this.boss.isInvulnerable()) {
+                // 보스 무적 상태일 때 메시지 처리
+                if (this.invulnerableMsgCount < MAX_INVULNERABLE_MSG_SHOWS) {
+                    this.invulnerableMsgCooldown.reset();
+                    this.invulnerableMsgCount++;
+                }
+            } else {
+                // 데미지 적용
+                this.boss.onHit(1);
+            }
+
+            // 보스 사망 체크
+            if (this.boss.getHp() <= 0) {
+                drawManager.triggerExplosion(
+                        this.boss.getPositionX() + this.boss.getWidth() / 2,
+                        this.boss.getPositionY() + this.boss.getHeight() / 2,
+                        true, true
+                );
+                SoundManager.stop();
+                SoundManager.playOnce(SOUND_EXPLOSION);
+            }
+            return true; // 충돌 발생
+        }
+        return false;
     }
 
 

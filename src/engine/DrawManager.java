@@ -1630,6 +1630,23 @@ public final class DrawManager {
     }
 
     /**
+     * Draws the boss timer.
+     *
+     * @param screen
+     * Screen to draw on.
+     * @param duration
+     * Duration in milliseconds.
+     */
+    public void drawBossTimer(final Screen screen, final long duration) {
+        long seconds = (duration / 1000) % 60;
+        long minutes = (duration / 60000);
+        String timeString = String.format("%02d:%02d", minutes, seconds);
+
+        backBufferGraphics.setFont(fontRegular);
+        backBufferGraphics.setColor(Color.WHITE);
+        backBufferGraphics.drawString(timeString, screen.getWidth() - 63, 25);
+    }
+    /**
      * Draws the item inventory on the game screen.
      * Shows up to 2 active items with their remaining duration.
      *
@@ -1673,6 +1690,9 @@ public final class DrawManager {
                         break;
                     case BULLETSPEEDUP:
                         itemText = ">>>";
+                        break;
+
+                    default:
                         break;
                 }
 
