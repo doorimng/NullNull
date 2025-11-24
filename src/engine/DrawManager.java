@@ -1691,6 +1691,9 @@ public final class DrawManager {
                     case BULLETSPEEDUP:
                         itemText = ">>>";
                         break;
+
+                    default:
+                        break;
                 }
 
                 // Check if should blink
