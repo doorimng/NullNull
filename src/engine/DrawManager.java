@@ -1646,6 +1646,7 @@ public final class DrawManager {
         backBufferGraphics.setColor(Color.WHITE);
         backBufferGraphics.drawString(timeString, screen.getWidth() - 63, 25);
     }
+    /**
      * Draws the item inventory on the game screen.
      * Shows up to 2 active items with their remaining duration.
      *
