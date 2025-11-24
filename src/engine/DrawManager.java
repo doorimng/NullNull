@@ -995,7 +995,11 @@ public final class DrawManager {
         int lineHeight = fontRegularMetrics.getHeight() + 5;
 
         for (Score score : highScores) {
-            scoreString = String.format("%s        %04d", score.getName(), score.getScore());
+            int totalSeconds = score.getTime() / 1000;
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+
+            scoreString = String.format("%s        %02d:%02d", score.getName(), minutes, seconds);
             int x;
             if (mode.equals("1P")) {
                 // Left column(1P)

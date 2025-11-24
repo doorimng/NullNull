@@ -517,6 +517,7 @@ public class BossScreen extends Screen {
 
             // 타이머 정지
             this.bossTimer.stop();
+            state.setBossClearTime(this.bossTimer.getDuration());
 
             // Recycle entities (리소스 정리)
             BulletPool.recycle(this.bullets);

@@ -14,6 +14,8 @@ public class Score implements Comparable<Score> {
     private String name;
     /** Score points. */
     private int score;
+    /** Time points. */
+    private int time;
 
     /** per-player breakdown */
     private int[] playerScores;
@@ -31,11 +33,11 @@ public class Score implements Comparable<Score> {
      * Constructor.
      *
      * @param name  Player name, three letters.
-     * @param score Player score.
+     * @param time Player time.
      */
-    public Score(final String name, final int score, final String mode) {
+    public Score(final String name, final int time, final String mode) {
         this.name = name;
-        this.score = score;
+        this.time = time;
         this.mode = mode; // add 1P/2P mode
     }
 
@@ -44,10 +46,10 @@ public class Score implements Comparable<Score> {
      */
     public Score(final String name, final GameState gs, final String mode) {
         this.name = name;
-        this.score = gs.getScore();
+        this.time = gs.getBossClearTime();
         this.levelReached = gs.getLevel();
         this.livesRemaining = gs.getLivesRemaining();
-        this.mode = mode; // add 1P/2P mode
+        this.mode = mode;
 
         int n = GameState.NUM_PLAYERS;
         this.playerScores = new int[n];
@@ -76,8 +78,8 @@ public class Score implements Comparable<Score> {
      *
      * @return High score.
      */
-    public final int getScore() {
-        return this.score;
+    public final int getTime() {
+        return this.time;
     }
 
     /** Getter for mode*/
@@ -123,7 +125,7 @@ public class Score implements Comparable<Score> {
 
     @Override
     public final int compareTo(final Score other) {
-        return Integer.compare(other.getScore(), this.score); // descending
+        return Integer.compare(this.time, other.getTime()); // descending
     }
 
     @Override
