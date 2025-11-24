@@ -1715,9 +1715,4 @@ public final class DrawManager {
             }
         }
     }
-
-
-
-
-
 }

@@ -93,10 +93,11 @@ public class ScoreScreen extends Screen {
         this.achievementManager = achievementManager;
         this.mode = gameState.getCoop() ? "2P" : "1P";
 
+        int currentClearTime = gameState.getBossClearTime();
         try {
             this.highScores = Core.getFileManager().loadHighScores(this.mode);
             if (highScores.size() < MAX_HIGH_SCORE_NUM
-                    || highScores.get(highScores.size() - 1).getScore() < this.score)
+                    || highScores.get(highScores.size() - 1).getTime() > currentClearTime)
                 this.isNewRecord = true;
 
         } catch (IOException e) {
@@ -191,7 +192,7 @@ public class ScoreScreen extends Screen {
         for (int i = 0; i < highScores.size(); i++) {
             Score existingScore = highScores.get(i);
             if (existingScore.getName().equals(newName)) {
-                if (newScore.getScore() > existingScore.getScore()) {
+                if (newScore.getTime() < existingScore.getTime()) {
                     highScores.set(i, newScore);
                     foundAndReplaced = true;
                 } else {
@@ -233,6 +234,13 @@ public class ScoreScreen extends Screen {
         drawManager.initDrawing(this);
 
 		drawManager.drawGameOver(this, this.inputDelay.checkFinished());
+
+
+        int timeMs = this.gameState.getBossClearTime();
+        long minutes = (timeMs / 1000) / 60;
+        long seconds = (timeMs / 1000) % 60;
+        String timeString = String.format("Clear Time: %02d:%02d", minutes, seconds);
+        drawManager.drawCenteredRegularString(this, timeString, this.getHeight() / 4 + 20);
 
         float accuracy = (this.bulletsShot > 0)
                 ? (float) this.shipsDestroyed / this.bulletsShot
