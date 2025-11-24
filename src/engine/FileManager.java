@@ -252,7 +252,7 @@ public final class FileManager {
             bufferedWriter.newLine();
 
             for(Score score : highScores) {
-                bufferedWriter.write(score.getName() + "," + score.getTime());
+                bufferedWriter.write(score.getName() + "," + score.getScore());
                 bufferedWriter.newLine();
             }
 

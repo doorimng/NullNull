@@ -14,8 +14,6 @@ public class Score implements Comparable<Score> {
     private String name;
     /** Score points. */
     private int score;
-    /** Time points. */
-    private int time;
 
     /** per-player breakdown */
     private int[] playerScores;
@@ -33,11 +31,11 @@ public class Score implements Comparable<Score> {
      * Constructor.
      *
      * @param name  Player name, three letters.
-     * @param time Player time.
+     * @param score Player score.
      */
-    public Score(final String name, final int time, final String mode) {
+    public Score(final String name, final int score, final String mode) {
         this.name = name;
-        this.time = time;
+        this.score = score;
         this.mode = mode; // add 1P/2P mode
     }
 
@@ -46,10 +44,10 @@ public class Score implements Comparable<Score> {
      */
     public Score(final String name, final GameState gs, final String mode) {
         this.name = name;
-        this.time = gs.getBossClearTime();
+        this.score = gs.getBossClearTime();
         this.levelReached = gs.getLevel();
         this.livesRemaining = gs.getLivesRemaining();
-        this.mode = mode;
+        this.mode = mode; // add 1P/2P mode
 
         int n = GameState.NUM_PLAYERS;
         this.playerScores = new int[n];
@@ -78,8 +76,8 @@ public class Score implements Comparable<Score> {
      *
      * @return High score.
      */
-    public final int getTime() {
-        return this.time;
+    public final int getScore() {
+        return this.score;
     }
 
     /** Getter for mode*/
@@ -118,14 +116,14 @@ public class Score implements Comparable<Score> {
      * Orders the scores descending by score.
      *
      * @param other
-     *              Score to compare the current one with.
+     * Score to compare the current one with.
      * @return Comparison between the two scores. Positive if the current one is
-     *         smaller, positive if its bigger, zero if it's the same.
+     * smaller, positive if its bigger, zero if it's the same.
      */
 
     @Override
     public final int compareTo(final Score other) {
-        return Integer.compare(this.time, other.getTime()); // descending
+        return Integer.compare(this.score, other.getScore()); // ascending
     }
 
     @Override

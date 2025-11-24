@@ -57,6 +57,7 @@ public class ScoreScreen extends Screen {
     private int[] totalCoins = new int[2];
     /** check 1P/2P mode; */
     private String mode;
+    private boolean isClear;
 
     /**
      * Constructor, establishes the properties of the screen.
@@ -92,19 +93,20 @@ public class ScoreScreen extends Screen {
         this.selectionCooldown.reset();
         this.achievementManager = achievementManager;
         this.mode = gameState.getCoop() ? "2P" : "1P";
+        this.isClear = this.livesRemaining > 0;
 
-        int currentClearTime = gameState.getBossClearTime();
-        try {
-            this.highScores = Core.getFileManager().loadHighScores(this.mode);
-            if (highScores.size() < MAX_HIGH_SCORE_NUM
-                    || highScores.get(highScores.size() - 1).getTime() > currentClearTime)
-                this.isNewRecord = true;
-
-        } catch (IOException e) {
-            logger.warning("Couldn't load high scores!");
+        if (this.isClear) {
+            int currentClearTime = gameState.getBossClearTime();
+            try {
+                this.highScores = Core.getFileManager().loadHighScores(this.mode);
+                if (highScores.size() < MAX_HIGH_SCORE_NUM || highScores.get(highScores.size() - 1).getScore() > currentClearTime)
+                    this.isNewRecord = true;
+            } catch (IOException e) {
+                logger.warning("Couldn't lo");
+            }
+        }else {
+            this.isNewRecord = false;
         }
-        // clear last key
-        inputManager.clearLastKey();
     }
 
     /**
@@ -177,6 +179,15 @@ public class ScoreScreen extends Screen {
 			}
 		}
 
+        if (!this.isClear) {
+            if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE) || inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+                SoundManager.playOnce("sound/select.wav");
+                this.returnCode = 1;
+                this.isRunning = false;
+            }
+        }
+        return;
+
     }
 
     /**
@@ -187,12 +198,13 @@ public class ScoreScreen extends Screen {
     private void saveScore() {
         String mode = (gameState != null && gameState.isCoop()) ? "2P" : "1P";
         String newName = new String(this.name);
-        Score newScore = new Score(newName, this.gameState, mode);
+        int clearTime = this.gameState.getBossClearTime();
+        Score newScore = new Score(newName, clearTime, mode);
         boolean foundAndReplaced = false;
         for (int i = 0; i < highScores.size(); i++) {
             Score existingScore = highScores.get(i);
             if (existingScore.getName().equals(newName)) {
-                if (newScore.getTime() < existingScore.getTime()) {
+                if (newScore.getScore() < existingScore.getScore()) {
                     highScores.set(i, newScore);
                     foundAndReplaced = true;
                 } else {
@@ -233,7 +245,11 @@ public class ScoreScreen extends Screen {
     private void draw() {
         drawManager.initDrawing(this);
 
-		drawManager.drawGameOver(this, this.inputDelay.checkFinished());
+        if (this.isClear) {
+            drawManager.drawCenteredBigString(this, "MISSION COMPLETE", this.getHeight() / 8);
+        } else {
+            drawManager.drawCenteredBigString(this, "MISSION FAILED", this.getHeight() / 8);
+        }
 
 
         int timeMs = this.gameState.getBossClearTime();
