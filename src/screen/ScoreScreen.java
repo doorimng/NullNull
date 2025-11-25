@@ -43,12 +43,19 @@ public class ScoreScreen extends Screen {
 
     /** Player name for record input. */
     private StringBuilder name;
+
+    /** [복구됨] Make sure the name is less than 3 characters. */
+    private boolean showNameError;
+
     /** Time between changes in user selection. */
     private Cooldown selectionCooldown;
     /** manages achievements.*/
     private AchievementManager achievementManager;
     /** check 1P/2P mode; */
     private String mode;
+
+    /** Flag to check if the user has released keys after screen transition. */
+    private boolean isInputReleased;
 
     /**
      * Constructor.
@@ -69,12 +76,17 @@ public class ScoreScreen extends Screen {
 
         this.isNewRecord = false;
         this.name = new StringBuilder();
+        this.showNameError = false; // 초기화
         this.selectionCooldown = Core.getCooldown(SELECTION_TIME);
         this.selectionCooldown.reset();
+
+        // 키 뗌 확인을 위한 초기화 (false로 시작)
+        this.isInputReleased = false;
+
         this.achievementManager = achievementManager;
         this.mode = gameState.getCoop() ? "2P" : "1P";
 
-        // 2. [중요] 클리어 시에만 신기록 판정 진행
+        // 2. 클리어 시에만 신기록 판정 진행 (Time Attack)
         if (this.isClear) {
             int currentClearTime = gameState.getBossClearTime();
             try {
@@ -111,72 +123,91 @@ public class ScoreScreen extends Screen {
 
         draw();
 
-        if (this.inputDelay.checkFinished()) {
-
-            // -------------------------------------------------------
-            // 1. 실패(GAME OVER) 시 로직
-            // -------------------------------------------------------
-            if (!this.isClear) {
-                // ESC: 맵/메뉴로 나가기 (1번)
-                if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
-                    SoundManager.playOnce("sound/select.wav");
-                    this.returnCode = 1;
-                    this.isRunning = false;
-                }
-                // SPACE: 다시 시작 (2번)
-                else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-                    SoundManager.playOnce("sound/select.wav");
-                    this.returnCode = 2; // Restart
-                    this.isRunning = false;
-                }
-                return; // 이름 입력 로직 실행 안 함
+        // -------------------------------------------------------
+        // [핵심 로직] 키 뗌 확인 (Key Release Check)
+        // 화면이 전환된 직후, 사용자가 이전에 누르고 있던 키(Space, Enter 등)를
+        // 뗄 때까지 입력을 처리하지 않고 기다립니다.
+        // -------------------------------------------------------
+        if (!this.isInputReleased) {
+            if (inputManager.isKeyDown(KeyEvent.VK_SPACE) ||
+                    inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
+                    inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
+                return; // 키가 눌려있으면 아무 동작 안 함
             }
+            // 모든 키가 떼어졌으면 입력 허용 상태로 전환
+            this.isInputReleased = true;
+        }
 
-            // -------------------------------------------------------
-            // 2. 성공(CLEAR) 시 로직
-            // -------------------------------------------------------
+        // 여기서부터는 실제 입력 처리 로직 (isInputReleased가 true일 때만 도달)
 
-            // ESC 키: 메인 타이틀로 이동 (1번)
+        // -------------------------------------------------------
+        // 1. 실패(GAME OVER) 시 로직
+        // -------------------------------------------------------
+        if (!this.isClear) {
+            // ESC: 맵/메뉴로 나가기 (1번)
             if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
                 SoundManager.playOnce("sound/select.wav");
-                this.returnCode = 1; // Title
+                this.returnCode = 1;
                 this.isRunning = false;
-                if (this.isNewRecord) {
-                    saveScore();
-                    saveAchievement();
-                }
             }
-            // SPACE 키: 저장 후 메인 타이틀로 이동 (1번)
+            // SPACE: 다시 시작 (2번)
             else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-                // 이름이 3글자 미만이면 그냥 무시 (에러 메시지 없음)
-                if (this.name.length() < 3) return;
-
                 SoundManager.playOnce("sound/select.wav");
-
-                this.returnCode = 1; // Title
-
+                this.returnCode = 2; // Restart
                 this.isRunning = false;
-                if (this.isNewRecord) {
-                    saveScore();
-                    saveAchievement();
-                }
+            }
+            return; // 이름 입력 로직 실행 안 함
+        }
+
+        // -------------------------------------------------------
+        // 2. 성공(CLEAR) 시 로직
+        // -------------------------------------------------------
+
+        // ESC 키: 메인 타이틀로 이동 (1번)
+        if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
+            SoundManager.playOnce("sound/select.wav");
+            this.returnCode = 1; // Title
+            this.isRunning = false;
+            if (this.isNewRecord) {
+                saveScore();
+                saveAchievement();
+            }
+        }
+        // SPACE 키: 저장 후 메인 타이틀로 이동 (1번)
+        else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+            // [복구됨] 이름이 3글자 미만이면 에러 표시하고 진행 안 함
+            if (this.name.length() < 3) {
+                this.showNameError = true;
+                return;
             }
 
-            // 이름 입력 (Backspace)
-            if (inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
-                    && this.selectionCooldown.checkFinished()) {
-                if (this.name.length() > 0) {
-                    this.name.deleteCharAt(this.name.length() - 1);
-                    this.selectionCooldown.reset();
-                }
-            }
+            SoundManager.playOnce("sound/select.wav");
 
-            // 이름 입력 (문자)
-            char typedChar = inputManager.getLastCharTyped();
-            if (typedChar != '\0') {
-                if (Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
-                    this.name.append(Character.toUpperCase(typedChar));
-                }
+            this.returnCode = 1; // Title
+
+            this.isRunning = false;
+            if (this.isNewRecord) {
+                saveScore();
+                saveAchievement();
+            }
+        }
+
+        // 이름 입력 (Backspace)
+        if (inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
+                && this.selectionCooldown.checkFinished()) {
+            if (this.name.length() > 0) {
+                this.name.deleteCharAt(this.name.length() - 1);
+                this.selectionCooldown.reset();
+                this.showNameError = false; // 글자 지우면 에러 해제
+            }
+        }
+
+        // 이름 입력 (문자)
+        char typedChar = inputManager.getLastCharTyped();
+        if (typedChar != '\0') {
+            if (Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
+                this.name.append(Character.toUpperCase(typedChar));
+                this.showNameError = false; // 글자 입력하면 에러 해제
             }
         }
     }
@@ -185,7 +216,6 @@ public class ScoreScreen extends Screen {
      * Saves the score (TIME) as a high score.
      */
     private void saveScore() {
-        // Time Attack 저장 방식
         String mode = (gameState != null && gameState.isCoop()) ? "2P" : "1P";
         String newName = new String(this.name);
         int clearTime = this.gameState.getBossClearTime();
@@ -196,6 +226,7 @@ public class ScoreScreen extends Screen {
         for (int i = 0; i < highScores.size(); i++) {
             Score existingScore = highScores.get(i);
             if (existingScore.getName().equals(newName)) {
+                // [확인] Time Attack이므로 시간이 더 짧을 때 갱신
                 if (newScore.getScore() < existingScore.getScore()) {
                     highScores.set(i, newScore);
                     foundAndReplaced = true;
@@ -232,10 +263,10 @@ public class ScoreScreen extends Screen {
     private void draw() {
         drawManager.initDrawing(this);
 
-        // 1. [타이틀 및 안내 문구] (성공/실패에 따라 색상과 텍스트 자동 변경)
+        // 1. [타이틀 및 안내 문구]
         drawManager.drawGameTitle(this, this.isClear);
 
-        // 2. [클리어 시간 표시] - 성공했을 때만 표시
+        // 2. [클리어 시간 표시]
         if (this.isClear) {
             int timeMs = this.gameState.getBossClearTime();
             long minutes = (timeMs / 1000) / 60;
@@ -272,6 +303,10 @@ public class ScoreScreen extends Screen {
         // 4. [이름 입력창] - 성공했을 때만 표시
         if (this.isClear) {
             drawManager.drawNameInput(this, this.name, this.isNewRecord);
+            // [복구됨] 에러 메시지 표시
+            if (this.showNameError) {
+                drawManager.drawNameInputError(this);
+            }
         }
 
         drawManager.completeDrawing(this);

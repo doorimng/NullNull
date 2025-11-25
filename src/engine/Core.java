@@ -28,7 +28,7 @@ public final class Core {
     private static final int FPS = 60;
 
     /** Lives per player (used to compute team pool in shared mode). */
-    private static final int MAX_LIVES = 3;
+    private static final int MAX_LIVES = 100;
     private static final int EXTRA_LIFE_FRECUENCY = 3;
 
     /** Frame to draw the screen on. */
@@ -39,7 +39,7 @@ public final class Core {
     private static Handler fileHandler;
     private static ConsoleHandler consoleHandler;
     private static int NUM_LEVELS; // Total number of levels
-    private static int currentLevel = 1;
+    private static int currentLevel = 6;
 
     /**
      * Test implementation.
