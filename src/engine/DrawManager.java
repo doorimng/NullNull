@@ -917,12 +917,17 @@ public final class DrawManager {
         }
         drawCenteredBigString(screen, titleText, screen.getHeight() / 8);
 
-        // 3. 안내 문구 (성공/실패 상관없이 무조건 표시)
-        // 안내 문구는 흰색으로 통일
+        // 3. 안내 문구 (흰색)
         backBufferGraphics.setColor(Color.WHITE);
+        String helpText;
 
-        // 문구 내용 (원하시는 대로 수정 가능)
-        String helpText = "Press SPACE to Restart, ESC to Map";
+        if (isClear) {
+            // [성공 시] 재시작 없이 타이틀로만 이동
+            helpText = "Press SPACE to Save & Title";
+        } else {
+            // [실패 시] 재시작 가능
+            helpText = "Press SPACE to Restart, ESC to Map";
+        }
 
         drawCenteredRegularString(screen, helpText,
                 screen.getHeight() / 2 + fontRegularMetrics.getHeight() * 10);

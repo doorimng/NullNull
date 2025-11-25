@@ -123,10 +123,10 @@ public class ScoreScreen extends Screen {
                     this.returnCode = 1;
                     this.isRunning = false;
                 }
-                // SPACE: 다시 시작 (2번) - 실패했으니 바로 재도전
+                // SPACE: 다시 시작 (2번)
                 else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
                     SoundManager.playOnce("sound/select.wav");
-                    this.returnCode = 2; // [확인] Restart
+                    this.returnCode = 2; // Restart
                     this.isRunning = false;
                 }
                 return; // 이름 입력 로직 실행 안 함
@@ -136,25 +136,24 @@ public class ScoreScreen extends Screen {
             // 2. 성공(CLEAR) 시 로직
             // -------------------------------------------------------
 
-            // ESC 키: 맵/메뉴로 나가기 (1번)
+            // ESC 키: 메인 타이틀로 이동 (1번)
             if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
                 SoundManager.playOnce("sound/select.wav");
-                this.returnCode = 1; // [확인] Map
+                this.returnCode = 1; // Title
                 this.isRunning = false;
                 if (this.isNewRecord) {
                     saveScore();
                     saveAchievement();
                 }
             }
-            // SPACE 키: 다시 시작 (2번)
+            // SPACE 키: 저장 후 메인 타이틀로 이동 (1번)
             else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-                // 이름이 3글자 미만이면 입력이 안 끝난 것으로 간주 (넘어가고 싶으면 이 줄 삭제)
+                // 이름이 3글자 미만이면 그냥 무시 (에러 메시지 없음)
                 if (this.name.length() < 3) return;
 
                 SoundManager.playOnce("sound/select.wav");
 
-                // [수정완료] 1(Map)에서 2(Restart)로 변경했습니다!
-                this.returnCode = 2;
+                this.returnCode = 1; // Title
 
                 this.isRunning = false;
                 if (this.isNewRecord) {
@@ -163,7 +162,7 @@ public class ScoreScreen extends Screen {
                 }
             }
 
-            // 이름 입력 (Backspace 및 문자 입력) 로직은 그대로 유지
+            // 이름 입력 (Backspace)
             if (inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
                     && this.selectionCooldown.checkFinished()) {
                 if (this.name.length() > 0) {
@@ -171,6 +170,8 @@ public class ScoreScreen extends Screen {
                     this.selectionCooldown.reset();
                 }
             }
+
+            // 이름 입력 (문자)
             char typedChar = inputManager.getLastCharTyped();
             if (typedChar != '\0') {
                 if (Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
