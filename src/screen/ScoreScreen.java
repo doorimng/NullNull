@@ -144,19 +144,19 @@ public class ScoreScreen extends Screen {
         // 1. 실패(GAME OVER) 시 로직
         // -------------------------------------------------------
         if (!this.isClear) {
-            // ESC: 맵/메뉴로 나가기 (1번)
+            // ESC: 맵으로 나가기 (Core 루프의 시작인 MapScreen으로 이동하기 위해 returnCode 2 반환)
             if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
                 SoundManager.playOnce("sound/select.wav");
-                this.returnCode = 1;
+                this.returnCode = 2; // [요청 2] 1(Title) -> 2(Restart Loop -> MapScreen)
                 this.isRunning = false;
             }
-            // SPACE: 다시 시작 (2번)
+            // SPACE: 다시 시작 (같은 스테이지 도전)
             else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
                 SoundManager.playOnce("sound/select.wav");
                 this.returnCode = 2; // Restart
                 this.isRunning = false;
             }
-            return; // 이름 입력 로직 실행 안 함
+            return;
         }
 
         // -------------------------------------------------------

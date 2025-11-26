@@ -39,7 +39,8 @@ public final class Core {
     private static Handler fileHandler;
     private static ConsoleHandler consoleHandler;
     private static int NUM_LEVELS; // Total number of levels
-    private static int currentLevel = 6;
+    private static int currentLevel = 1;
+    private static int startLevel = 1;
 
     /**
      * Test implementation.
@@ -105,6 +106,8 @@ public final class Core {
                 case 2:
                     // 2P mode: building gameState now using user choice
                     if (gameState == null) {
+                        gameState = new GameState(startLevel, MAX_LIVES, coopSelected, 0);
+                    } else if (!gameState.teamAlive()) {
                         gameState = new GameState(currentLevel, MAX_LIVES, coopSelected, 0);
                     }
 
@@ -244,7 +247,9 @@ public final class Core {
                     if (coopSelected) {
                         returnCode = 7; // Go to Player 2 selection.
                     } else {
-                        returnCode = 2; // Start game.
+                        gameState = null;
+                        currentLevel = 1;
+                        returnCode = 2;
                     }
                     break;
 
@@ -257,7 +262,9 @@ public final class Core {
                     if (returnCode == 6) { break; }
 
                     shipTypeP2 = ((ShipSelectionScreen) currentScreen).getSelectedShipType();
-                    returnCode = 2; // Start game.
+                    gameState = null;
+                    currentLevel = 1;
+                    returnCode = 2;
                     break;
 
                 case 8:
