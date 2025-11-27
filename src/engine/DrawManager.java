@@ -745,10 +745,37 @@ public final class DrawManager {
     }
 
     public void drawStory(final Screen screen, final int selectedIndex) {
-        String string = "story here! (level" + selectedIndex + ")" ;
+        String[] stories = {
+                "The Earth is in danger\n\nYou have to smash monsters\nbefore they get to Earth!",
+                "Some monsters have to\nbe attacked many times",
+                "Hurry up!\nThey're getting closer",
+                "These monsters\nseem unwilling to attack",
+                "All but you were defeated\nNow you are the last force of the Earth",
+                "The boss is smiling at you\n\nLet's defeat boss!"
+        };
 
-        backBufferGraphics.setColor(Color.GRAY);
-        drawCenteredBigString(screen, string, screen.getHeight() / 6 + 100);
+        String string = stories[selectedIndex-1];
+
+        Font originalFont = backBufferGraphics.getFont();
+        Font font = originalFont.deriveFont(2f);
+        backBufferGraphics.setFont(font);
+
+        if(selectedIndex-1==0){
+            backBufferGraphics.setColor(Color.RED);
+        }
+        else{
+            backBufferGraphics.setColor(Color.WHITE);
+        }
+
+        String[] lines = string.split("\n");
+        int y = screen.getHeight() / 6 + 100;
+        int lineHeight = 30;
+        for (String line : lines) {
+            drawCenteredBigString(screen, line.trim(), y);
+            y += lineHeight;
+        }
+
+        backBufferGraphics.setFont(originalFont);
     }
 
     /**
