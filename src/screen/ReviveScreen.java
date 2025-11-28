@@ -2,10 +2,11 @@ package screen;
 
 import java.awt.event.KeyEvent;
 
-import engine.GameState;
-import engine.InputManager;
-import engine.ReviveManager;
-import engine.DrawManager;
+import engine.*;
+import entity.*;
+import java.util.Set;
+import java.util.HashSet;
+
 
 /**
  * 공통 부활(Revive) 로직을 담는 Screen 베이스 클래스.
@@ -132,6 +133,72 @@ public abstract class ReviveScreen extends Screen {
             drawManager.drawReviveFail(this, this.reviveFailMessage);
         }
     }
+    /**
+     * 플레이어 1명에 대한 이동/사격 공통 처리.
+     */
+    protected void handleSingleShipInput(int playerIndex,
+                                         Ship[] ships,
+                                         Set<Bullet> bullets,
+                                         GameState state) {
+        Ship ship = ships[playerIndex];
+        if (ship == null || ship.isDestroyed())
+            return;
+
+        boolean moveRight, moveLeft, fire;
+
+        if (playerIndex == 0) {
+            moveRight = inputManager.isP1RightPressed();
+            moveLeft  = inputManager.isP1LeftPressed();
+            fire      = inputManager.isP1ShootPressed();
+        } else {
+            moveRight = inputManager.isP2RightPressed();
+            moveLeft  = inputManager.isP2LeftPressed();
+            fire      = inputManager.isP2ShootPressed();
+        }
+
+        boolean isRightBorder =
+                ship.getPositionX() + ship.getWidth() + ship.getSpeed() > this.width - 1;
+        boolean isLeftBorder =
+                ship.getPositionX() - ship.getSpeed() < 1;
+
+        if (moveRight && !isRightBorder) {
+            ship.moveRight();
+        }
+        if (moveLeft && !isLeftBorder) {
+            ship.moveLeft();
+        }
+
+        if (fire && ship.shoot(bullets)) {
+            SoundManager.playOnce("sound/shoot.wav");
+            state.incBulletsShot(playerIndex);
+        }
+    }
+    protected void cleanBulletsCommon(Set<Bullet> bullets, int separationLineHeight) {
+        Set<Bullet> recyclable = new HashSet<>();
+        for (Bullet bullet : bullets) {
+            bullet.update();
+            if (bullet.getPositionY() < separationLineHeight
+                    || bullet.getPositionY() > this.height) {
+                recyclable.add(bullet);
+            }
+        }
+        bullets.removeAll(recyclable);
+        BulletPool.recycle(recyclable);
+    }
+
+    protected void cleanItemsCommon(Set<Item> items) {
+        Set<Item> recyclableItems = new HashSet<>();
+        for (Item item : items) {
+            item.update();
+            if (item.getPositionY() > this.height) {
+                recyclableItems.add(item);
+            }
+        }
+        items.removeAll(recyclableItems);
+        ItemPool.recycle(recyclableItems);
+    }
+
+
 
     // ----------------------------------------------------------------------
     // 하위 클래스가 구현해야 하는 콜백들

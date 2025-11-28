@@ -448,49 +448,15 @@ public class BossScreen extends ReviveScreen {
      */
     private void handlePlayerInputAndShooting() {
         for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
-            Ship ship = this.ships[p];
-            if (ship != null && !ship.isDestroyed()) {
-                handleSingleShipInput(p, ship);
-            }
+            handleSingleShipInput(p, this.ships, this.bullets, this.state);
         }
     }
+
 
     /**
      * 개별 선박의 입력, 이동, 사격을 처리합니다.
      */
-    private void handleSingleShipInput(int playerIndex, Ship ship) {
-        boolean moveRight;
-        boolean moveLeft;
-        boolean fire;
 
-        if (playerIndex == 0) {
-            moveRight = inputManager.isP1RightPressed();
-            moveLeft = inputManager.isP1LeftPressed();
-            fire = inputManager.isP1ShootPressed();
-        } else {
-            moveRight = inputManager.isP2RightPressed();
-            moveLeft = inputManager.isP2LeftPressed();
-            fire = inputManager.isP2ShootPressed();
-        }
-
-        boolean isRightBorder =
-                ship.getPositionX() + ship.getWidth()
-                        + ship.getSpeed() > this.width - 1;
-        boolean isLeftBorder =
-                ship.getPositionX() - ship.getSpeed() < 1;
-
-        if (moveRight && !isRightBorder) {
-            ship.moveRight();
-        }
-        if (moveLeft && !isLeftBorder) {
-            ship.moveLeft();
-        }
-
-        if (fire && ship.shoot(this.bullets)) {
-            SoundManager.playOnce(SOUND_SHOOT);
-            state.incBulletsShot(playerIndex);
-        }
-    }
 
     /** 플레이어 ship 상태 업데이트 */
     private void updateShips() {
@@ -694,32 +660,13 @@ public class BossScreen extends ReviveScreen {
      * Cleans bullets that go off screen.
      */
     private void cleanBullets() {
-        Set<Bullet> recyclable = new HashSet<>();
-        for (Bullet bullet : this.bullets) {
-            bullet.update();
-            if (bullet.getPositionY() < SEPARATION_LINE_HEIGHT
-                    || bullet.getPositionY() > this.height) {
-                recyclable.add(bullet);
-            }
-        }
-        this.bullets.removeAll(recyclable);
-        BulletPool.recycle(recyclable);
+        cleanBulletsCommon(this.bullets, SEPARATION_LINE_HEIGHT);
     }
 
-    /**
-     * Cleans items that go off screen.
-     */
     private void cleanItems() {
-        Set<Item> recyclableItems = new HashSet<>();
-        for (Item item : this.items) {
-            item.update();
-            if (item.getPositionY() > this.height) {
-                recyclableItems.add(item);
-            }
-        }
-        this.items.removeAll(recyclableItems);
-        ItemPool.recycle(recyclableItems);
+        cleanItemsCommon(this.items);
     }
+
 
     /**
      * Manages pickups between player and items.

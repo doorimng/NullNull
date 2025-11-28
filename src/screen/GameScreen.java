@@ -284,45 +284,11 @@ public class GameScreen extends ReviveScreen {
             if (this.inputDelay.checkFinished() && !this.levelFinished) {
 
                 // Per-player input/move/shoot
+                // Per-player input/move/shoot
                 for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
-                    Ship ship = this.ships[p];
-
-                    if (ship == null || ship.isDestroyed())
-                        continue;
-
-                    boolean moveRight, moveLeft, fire;
-                    // Get player key input status
-                    if (p == 0) {
-                        moveRight = inputManager.isP1RightPressed();
-                        moveLeft = inputManager.isP1LeftPressed();
-                        fire = inputManager.isP1ShootPressed();
-                    } else {
-                        moveRight = inputManager.isP2RightPressed();
-                        moveLeft = inputManager.isP2LeftPressed();
-                        fire = inputManager.isP2ShootPressed();
-                    }
-
-                    boolean isRightBorder =
-                            ship.getPositionX() + ship.getWidth()
-                                    + ship.getSpeed() > this.width - 1;
-
-                    boolean isLeftBorder =
-                            ship.getPositionX() - ship.getSpeed() < 1;
-
-                    if (moveRight && !isRightBorder)
-                        ship.moveRight();
-                    if (moveLeft && !isLeftBorder)
-                        ship.moveLeft();
-
-                    fire = (p == 0)
-                            ? inputManager.isKeyDown(KeyEvent.VK_SPACE)
-                            : inputManager.isKeyDown(KeyEvent.VK_ENTER);
-
-                    if (fire && ship.shoot(this.bullets)) {
-                        SoundManager.playOnce("sound/shoot.wav");
-                        state.incBulletsShot(p); // 2P mode: increments per-player bullet shots
-                    }
+                    handleSingleShipInput(p, this.ships, this.bullets, this.state);
                 }
+
 
                 // Special ship lifecycle
                 if (this.enemyShipSpecial != null) {
@@ -512,30 +478,13 @@ public class GameScreen extends ReviveScreen {
      * Cleans bullets that go off screen.
      */
     private void cleanBullets() {
-        Set<Bullet> recyclable = new HashSet<>();
-        for (Bullet bullet : this.bullets) {
-            bullet.update();
-            if (bullet.getPositionY() < SEPARATION_LINE_HEIGHT
-                    || bullet.getPositionY() > this.height)
-                recyclable.add(bullet);
-        }
-        this.bullets.removeAll(recyclable);
-        BulletPool.recycle(recyclable);
+        cleanBulletsCommon(this.bullets, SEPARATION_LINE_HEIGHT);
     }
 
-    /**
-     * Cleans items that go off screen.
-     */
     private void cleanItems() {
-        Set<Item> recyclableItems = new HashSet<>();
-        for (Item item : this.items) {
-            item.update();
-            if (item.getPositionY() > this.height)
-                recyclableItems.add(item);
-        }
-        this.items.removeAll(recyclableItems);
-        ItemPool.recycle(recyclableItems);
+        cleanItemsCommon(this.items);
     }
+
 
     /**
      * Manages pickups between player and items.
