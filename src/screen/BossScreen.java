@@ -1,3 +1,4 @@
+
 package screen;
 
 import java.awt.event.KeyEvent;
@@ -13,10 +14,10 @@ import engine.GameSettings;
 import engine.GameState;
 import engine.AchievementManager;
 import engine.SoundManager;
-import engine.BossTimer; // Add this import
+import engine.BossTimer;
 import entity.BulletEmitter;
 import engine.*;
-import entity.BulletEmitter; // 보스 로직에 필요
+import entity.BulletEmitter;
 import entity.*;
 
 /**
@@ -111,6 +112,19 @@ public class BossScreen extends Screen {
     /** Boss Timer */
     private BossTimer bossTimer;
     private boolean isTimerStarted;
+
+    /** Revive Manager */
+    private ReviveManager reviveManager;
+
+    private enum RevivePhase {
+        PLAYING,
+        REVIVE_PROMPT,
+        REVIVE_RESULT,
+        EXITING
+    }
+    private RevivePhase revivePhase = RevivePhase.PLAYING;
+    private int reviveSelection = 0; // 0 = YES, 1 = NO
+    private String reviveFailMessage = "";
 
 
     /**
@@ -260,6 +274,10 @@ public class BossScreen extends Screen {
         this.isPaused = false;
         this.pauseCooldown = Core.getCooldown(PAUSE_COOLDOWN_MS);
         this.returnMenuCooldown = Core.getCooldown(RETURN_MENU_COOLDOWN_MS);
+
+        // Initialize ReviveManager
+        this.reviveManager = new ReviveManager(this.state);
+        this.revivePhase = RevivePhase.PLAYING;
     }
 
     /**
@@ -289,6 +307,23 @@ public class BossScreen extends Screen {
     protected final void update() {
         super.update();
 
+        // ----------------------------------------
+        // Revive Phase Handler
+        // ----------------------------------------
+        switch (this.revivePhase) {
+            case REVIVE_PROMPT:
+                handleRevivePrompt();  // UI 띄우기 + 입력받기
+                return; // 게임 업데이트 중단
+
+            case REVIVE_RESULT:
+                handleReviveFailed();  // 실패 메시지 UI
+                return;
+
+            case EXITING:
+                this.isRunning = false;
+                return;
+        }
+
         handleCountdownSound();
         handlePauseAndMenuInput();
 
@@ -309,6 +344,12 @@ public class BossScreen extends Screen {
         updateGameState();
 
         handleCollisionsAndCleanup();
+
+        // Check if collision triggered revive
+        if (this.revivePhase != RevivePhase.PLAYING) {
+            return;
+        }
+
         checkInGameAchievements();
 
         // 2. 게임 오버(패배) 조건 체크 및 처리
@@ -337,6 +378,7 @@ public class BossScreen extends Screen {
      * 플레이어 팀 전멸 시 게임 오버 시퀀스를 처리합니다.
      */
     private void checkAndHandleGameOver() {
+        // revivePhase가 PLAYING 상태인데 목숨이 없고, 아직 레벨이 안끝났다면 처리
         if (!state.teamAlive() && !this.levelFinished) {
             bossScreenLogger.info("Player team is defeated on Boss Screen.");
 
@@ -663,6 +705,16 @@ public class BossScreen extends Screen {
             drawManager.drawPauseOverlay(this);
         }
 
+        // --- Revive UI ---
+        if (this.revivePhase == RevivePhase.REVIVE_PROMPT) {
+            drawManager.drawRevivePrompt(this, this.reviveSelection);
+        }
+
+        if (this.revivePhase == RevivePhase.REVIVE_RESULT) {
+            drawManager.drawReviveFail(this, this.reviveFailMessage);
+        }
+        // -------------------
+
         drawMessages();
 
         drawManager.completeDrawing(this);
@@ -746,6 +798,13 @@ public class BossScreen extends Screen {
                 drawManager.setLastLife(state.getLivesRemaining() == 1);
                 drawManager.setDeath(state.getLivesRemaining() == 0);
                 bossScreenLogger.info("Hit on player " + (p + 1));
+
+                // --- Revive Trigger ---
+                if (state.getLivesRemaining() == 0) {
+                    this.revivePhase = RevivePhase.REVIVE_PROMPT;
+                }
+                // ------------------------------
+
                 return true; // 충돌 발생함
             }
         }
@@ -875,5 +934,83 @@ public class BossScreen extends Screen {
         if (state.getScore() >= 3000) {
             achievementManager.unlock("Get 3000 Score");
         }
+    }
+
+    // ----------------------------
+    // Revive Prompt Input Handler
+    // ----------------------------
+    private void handleRevivePromptInput() {
+        if (inputManager.isKeyDown(KeyEvent.VK_UP)) {
+            reviveSelection = 0; // YES
+        }
+        if (inputManager.isKeyDown(KeyEvent.VK_DOWN)) {
+            reviveSelection = 1; // NO
+        }
+
+        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) || inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+            if (reviveSelection == 0) { // YES
+                boolean ok = reviveManager.tryRevive();
+                if (ok) {
+                    respawnPlayer();
+                    this.revivePhase = RevivePhase.PLAYING;
+                } else {
+                    if (!reviveManager.canRevive(state.getLevel())) {
+                        reviveFailMessage = "It's already revived at this level";
+                    } else if (state.getCoins() < 50) {
+                        reviveFailMessage = "You don't have enough coins";
+                    } else {
+                        reviveFailMessage = "You can't revive";
+                    }
+                    this.revivePhase = RevivePhase.REVIVE_RESULT;
+
+                    InputManager.resetKeys();
+                }
+            } else { // NO
+                // 거절 시 점수 화면(2)으로 이동
+                this.returnCode = 2;
+                this.isRunning = false;
+            }
+        }
+    }
+
+
+    // ----------------------------
+    // Revive Result Input Handler
+    // ----------------------------
+    private void handleReviveResultInput() {
+        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
+                inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+            // 실패 메시지 확인 후에도 점수 화면(2)으로 이동
+            this.returnCode = 2;
+            this.isRunning = false;
+        }
+    }
+
+    // ----------------------------
+    // Respawn Player (부활 위치)
+    // ----------------------------
+    private void respawnPlayer() {
+        // 부활 시 추가 로직이 필요하면 여기에 작성
+        // 현재는 ReviveManager.tryRevive()에서 목숨값은 증가시켰으므로,
+        // 화면 상태만 돌려주면 됨
+        this.levelFinished = false;
+        this.screenFinishedCooldown.reset();
+        this.revivePhase = RevivePhase.PLAYING;
+    }
+
+    // --------------------------------------------
+    // RevivePrompt UI.phase handler
+    // --------------------------------------------
+    private void handleRevivePrompt() {
+        handleRevivePromptInput();
+        draw();
+    }
+
+    // --------------------------------------------
+    // Revive Failure
+    // --------------------------------------------
+    private void handleReviveFailed() {
+        handleReviveResultInput();
+        draw();
     }
 }
