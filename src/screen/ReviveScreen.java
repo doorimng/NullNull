@@ -113,6 +113,34 @@ public abstract class ReviveScreen extends Screen {
         }
     }
 
+    // ReviveScreen.java 안에 추가
+    /**
+     * 부활 단계(REVIVE_PROMPT / RESULT / EXITING / PLAYING)를 공통으로 처리한다.
+     *
+     * @return true 이면 게임 로직 계속 진행, false 이면(프롬프트/결과/종료) 그 프레임에서
+     *         더 이상 업데이트하지 않고 draw()만 하고 return 해야 한다.
+     */
+    protected boolean handleRevivePhaseState(InputManager inputManager) {
+        switch (this.revivePhase) {
+            case REVIVE_PROMPT:
+                handleRevivePromptInput(inputManager);
+                return false;
+
+            case REVIVE_RESULT:
+                handleReviveResultInput(inputManager);
+                return false;
+
+            case EXITING:
+                this.isRunning = false;
+                return false;
+
+            case PLAYING:
+            default:
+                return true;
+        }
+    }
+
+
     /**
      * Revive 실패 결과 창에서의 입력 처리.
      */

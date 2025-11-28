@@ -7,13 +7,6 @@ import java.util.Collections;
 import java.util.logging.Logger;
 import java.util.function.IntSupplier;
 
-import engine.Cooldown;
-import engine.Core;
-import engine.GameSettings;
-import engine.GameState;
-import engine.AchievementManager;
-import engine.SoundManager;
-import engine.BossTimer;
 import engine.*;
 import entity.*;
 import entity.BulletEmitter;
@@ -287,26 +280,11 @@ public class BossScreen extends ReviveScreen {
         super.update();
 
         // ----------------------------------------
-        // Revive Phase Handler
+        // Revive Phase Handler (공통 헬퍼 사용)
         // ----------------------------------------
-        switch (this.revivePhase) {
-            case REVIVE_PROMPT:
-                handleRevivePromptInput(this.inputManager);
-                draw();
-                return;
-
-            case REVIVE_RESULT:
-                handleReviveResultInput(this.inputManager);
-                draw();
-                return;
-
-            case EXITING:
-                this.isRunning = false;
-                return;
-
-            case PLAYING:
-            default:
-                break;
+        if (!handleRevivePhaseState(this.inputManager)) {
+            draw();
+            return;
         }
 
         handleCountdownSound();
@@ -841,17 +819,7 @@ public class BossScreen extends ReviveScreen {
      * These achievements can be unlocked at any time during gameplay.
      */
     public void checkInGameAchievements() {
-        if (state.getShipsDestroyed() == 1) {
-            achievementManager.unlock("First Blood");
-        }
-
-        if (state.getBulletsShot() >= 50) {
-            achievementManager.unlock("50 Bullets");
-        }
-
-        if (state.getScore() >= 3000) {
-            achievementManager.unlock("Get 3000 Score");
-        }
+        AchievementUtil.checkBasicAchievements(state, achievementManager);
     }
 
     // ------------------------------------------------------------------

@@ -220,28 +220,14 @@ public class GameScreen extends ReviveScreen {
     protected final void update() {
         super.update();
 
+        /// ----------------------------------------
+        // Revive Phase Handler (공통 헬퍼 사용)
         // ----------------------------------------
-        // Revive Phase Handler
-        // ----------------------------------------
-        switch (this.revivePhase) {
-            case REVIVE_PROMPT:
-                handleRevivePromptInput(this.inputManager);
-                draw();
-                return;
-
-            case REVIVE_RESULT:
-                handleReviveResultInput(this.inputManager);
-                draw();
-                return;
-
-            case EXITING:
-                this.isRunning = false;
-                return;
-
-            case PLAYING:
-            default:
-                break;
+        if (!handleRevivePhaseState(this.inputManager)) {
+            draw();     // 화면만 다시 그리고
+            return;     // 이 프레임 로직 종료
         }
+
 
         // Countdown beep once during pre-start
         if (!this.inputDelay.checkFinished() && !countdownSoundPlayed) {
@@ -631,10 +617,7 @@ public class GameScreen extends ReviveScreen {
      * check Achievement released;
      */
     public void checkAchievement() {
-        // First Blood
-        if (state.getShipsDestroyed() == 1) {
-            achievementManager.unlock("First Blood");
-        }
+        AchievementUtil.checkBasicAchievements(state, achievementManager);
         // Clear
         if (levelFinished && this.enemyShipFormation.isEmpty()
                 && state.getLevel() == 5) {
@@ -662,15 +645,6 @@ public class GameScreen extends ReviveScreen {
                     achievementManager.unlock("Sharpshooter");
                 }
             }
-        }
-
-        //50 Bullets
-        if (state.getBulletsShot() >= 50) {
-            achievementManager.unlock("50 Bullets");
-        }
-        //Get 3000 Score
-        if (state.getScore() >= 3000) {
-            achievementManager.unlock("Get 3000 Score");
         }
     }
 
