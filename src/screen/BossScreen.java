@@ -1,4 +1,3 @@
-
 package screen;
 
 import java.awt.event.KeyEvent;
@@ -15,16 +14,15 @@ import engine.GameState;
 import engine.AchievementManager;
 import engine.SoundManager;
 import engine.BossTimer;
-import entity.BulletEmitter;
 import engine.*;
-import entity.BulletEmitter;
 import entity.*;
+import entity.BulletEmitter;
 
 /**
  * Implements the boss screen, where the boss fight happens.
  * Based on GameScreen.java.
  */
-public class BossScreen extends Screen {
+public class BossScreen extends ReviveScreen {
 
     /** Milliseconds until the screen accepts user input. */
     private static final int INPUT_DELAY = 6000;
@@ -43,17 +41,14 @@ public class BossScreen extends Screen {
     private static final int COUNTDOWN_BEEP_TIME_MS = 1750;
 
     /** 사운드 경로 상수 (중복 리터럴 제거) */
-    private static final String SOUND_BGM          = "sound/SpaceInvader-GameTheme.wav";
-    private static final String SOUND_EXPLOSION    = "sound/explosion.wav";
-    private static final String SOUND_SHOOT        = "sound/shoot.wav";
-    private static final String SOUND_SELECT       = "sound/select.wav";
-    private static final String SOUND_HOVER        = "sound/hover.wav";
-    private static final String SOUND_COUNTDOWN    = "sound/CountDownSound.wav";
+    private static final String SOUND_BGM       = "sound/SpaceInvader-GameTheme.wav";
+    private static final String SOUND_EXPLOSION = "sound/explosion.wav";
+    private static final String SOUND_SHOOT     = "sound/shoot.wav";
+    private static final String SOUND_SELECT    = "sound/select.wav";
+    private static final String SOUND_COUNTDOWN = "sound/CountDownSound.wav";
 
     /** For Check Achievement */
     private final AchievementManager achievementManager;
-    /** Current game state. */
-    private final GameState state;
 
     /** Boss Entity. */
     private Boss boss;
@@ -113,45 +108,25 @@ public class BossScreen extends Screen {
     private BossTimer bossTimer;
     private boolean isTimerStarted;
 
-    /** Revive Manager */
-    private ReviveManager reviveManager;
-
-    private enum RevivePhase {
-        PLAYING,
-        REVIVE_PROMPT,
-        REVIVE_RESULT,
-        EXITING
-    }
-    private RevivePhase revivePhase = RevivePhase.PLAYING;
-    private int reviveSelection = 0; // 0 = YES, 1 = NO
-    private String reviveFailMessage = "";
-
-
     /**
      * Constructor, establishes the properties of the screen.
      *
-     * @param gameState
-     * Current game state.
-     * @param width
-     * Screen width.
-     * @param height
-     * Screen height.
-     * @param fps
-     * Frames per second, frame rate at which the game is run.
-     * @param shipTypeP1
-     * Player 1's ship type.
-     * @param shipTypeP2
-     * Player 2's ship type.
-     * @param achievementManager
-     * Achievement manager instance.
+     * @param gameState          Current game state.
+     * @param width              Screen width.
+     * @param height             Screen height.
+     * @param fps                Frames per second.
+     * @param shipTypeP1         Player 1's ship type.
+     * @param shipTypeP2         Player 2's ship type.
+     * @param achievementManager Achievement manager instance.
      */
     public BossScreen(final GameState gameState,
                       final int width, final int height, final int fps,
-                      final Ship.ShipType shipTypeP1, final Ship.ShipType shipTypeP2,
+                      final Ship.ShipType shipTypeP1,
+                      final Ship.ShipType shipTypeP2,
                       final AchievementManager achievementManager) {
-        super(width, height, fps);
 
-        this.state = gameState;
+        super(gameState, width, height, fps);
+
         this.achievementManager = achievementManager;
         this.shipTypeP1 = shipTypeP1;
         this.shipTypeP2 = shipTypeP2;
@@ -179,14 +154,13 @@ public class BossScreen extends Screen {
         // Start background music
         SoundManager.startBackgroundMusic(SOUND_BGM);
 
-        // Start Boss Timer
-        // this.bossTimer.start(this.state.getLevel());
-
         // 1. Create player ships
-        this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30, Entity.Team.PLAYER1, shipTypeP1, this.state);
+        this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30,
+                Entity.Team.PLAYER1, shipTypeP1, this.state);
         this.ships[0].setPlayerId(1);
         if (state.isCoop()) {
-            this.ships[1] = new Ship(this.width / 2 + 60, this.height - 30, Entity.Team.PLAYER2, shipTypeP2, this.state);
+            this.ships[1] = new Ship(this.width / 2 + 60, this.height - 30,
+                    Entity.Team.PLAYER2, shipTypeP2, this.state);
             this.ships[1].setPlayerId(2);
         } else {
             this.ships[1] = null;
@@ -228,7 +202,6 @@ public class BossScreen extends Screen {
                 for (EnemyShip minion : this.minionFormation) {
                     minion.destroy();
                 }
-                // Let update() handle the visual removal
             }
         };
 
@@ -238,11 +211,14 @@ public class BossScreen extends Screen {
         };
 
         IntSupplier minionAlive = () ->
-                (this.minionFormation != null) ? this.minionFormation.getShipCount() : 0;
+                (this.minionFormation != null)
+                        ? this.minionFormation.getShipCount()
+                        : 0;
 
         BulletEmitter emitter = (x, y, vx, vy) -> {
-            // Boss.java's vy is just a concept, use given vy or a fixed speed for enemy bullets.
-            Bullet bullet = BulletPool.getBullet(x, y, vy, 3 * 2, 5 * 2, Entity.Team.ENEMY);
+            Bullet bullet =
+                    BulletPool.getBullet(x, y, vy, 3 * 2, 5 * 2,
+                            Entity.Team.ENEMY);
             bullet.setSpeedX(vx);
             this.bullets.add(bullet);
         };
@@ -253,14 +229,16 @@ public class BossScreen extends Screen {
                 emitter, minionAlive, spawnHP1Group,
                 spawnHP2Group, clearShield, onPhase2StartCallback);
 
-        //add inventory
+        // inventory
         this.inventory = new ItemInventory(this.state, 0);
 
         // 4. Cooldowns and Sets
-        this.screenFinishedCooldown = Core.getCooldown(SCREEN_CHANGE_INTERVAL);
+        this.screenFinishedCooldown =
+                Core.getCooldown(SCREEN_CHANGE_INTERVAL);
         this.bullets = new HashSet<>();
         this.items = new HashSet<>();
-        this.invulnerableMsgCooldown = Core.getCooldown(INVULNERABLE_MSG_DURATION);
+        this.invulnerableMsgCooldown =
+                Core.getCooldown(INVULNERABLE_MSG_DURATION);
         this.phase2MsgCooldown = Core.getCooldown(PHASE_2_MSG_DURATION);
 
         this.invulnerableMsgCount = 0;
@@ -273,11 +251,11 @@ public class BossScreen extends Screen {
 
         this.isPaused = false;
         this.pauseCooldown = Core.getCooldown(PAUSE_COOLDOWN_MS);
-        this.returnMenuCooldown = Core.getCooldown(RETURN_MENU_COOLDOWN_MS);
+        this.returnMenuCooldown =
+                Core.getCooldown(RETURN_MENU_COOLDOWN_MS);
 
-        // Initialize ReviveManager
-        this.reviveManager = new ReviveManager(this.state);
-        this.revivePhase = RevivePhase.PLAYING;
+        // Revive 상태 초기화
+        initReviveState();
     }
 
     /**
@@ -295,7 +273,8 @@ public class BossScreen extends Screen {
         // Stop all music on exiting this screen
         SoundManager.stopAllMusic();
 
-        bossScreenLogger.info("Boss Screen cleared with a score of " + state.getScore());
+        bossScreenLogger.info("Boss Screen cleared with a score of "
+                + state.getScore());
         return this.returnCode;
     }
 
@@ -312,23 +291,28 @@ public class BossScreen extends Screen {
         // ----------------------------------------
         switch (this.revivePhase) {
             case REVIVE_PROMPT:
-                handleRevivePrompt();  // UI 띄우기 + 입력받기
-                return; // 게임 업데이트 중단
+                handleRevivePromptInput(this.inputManager);
+                draw();
+                return;
 
             case REVIVE_RESULT:
-                handleReviveFailed();  // 실패 메시지 UI
+                handleReviveResultInput(this.inputManager);
+                draw();
                 return;
 
             case EXITING:
                 this.isRunning = false;
                 return;
+
+            case PLAYING:
+            default:
+                break;
         }
 
         handleCountdownSound();
         handlePauseAndMenuInput();
 
         if (!this.isPaused) {
-            // 복잡한 로직을 processGameLogic 함수로 위임하여 복잡도 감소
             processGameLogic();
         }
 
@@ -345,7 +329,7 @@ public class BossScreen extends Screen {
 
         handleCollisionsAndCleanup();
 
-        // Check if collision triggered revive
+        // 충돌 중 revive가 걸렸으면 더 진행하지 않음
         if (this.revivePhase != RevivePhase.PLAYING) {
             return;
         }
@@ -378,9 +362,9 @@ public class BossScreen extends Screen {
      * 플레이어 팀 전멸 시 게임 오버 시퀀스를 처리합니다.
      */
     private void checkAndHandleGameOver() {
-        // revivePhase가 PLAYING 상태인데 목숨이 없고, 아직 레벨이 안끝났다면 처리
         if (!state.teamAlive() && !this.levelFinished) {
-            bossScreenLogger.info("Player team is defeated on Boss Screen.");
+            bossScreenLogger.info(
+                    "Player team is defeated on Boss Screen.");
 
             // 게임 오버 시퀀스 트리거
             this.levelFinished = true;
@@ -402,21 +386,19 @@ public class BossScreen extends Screen {
      * 패배 시 엔티티(총알, 아이템, 적)를 정리합니다.
      */
     private void cleanupEntitiesOnLose() {
-        // 패배 시 즉시 엔티티 재활용
         BulletPool.recycle(this.bullets);
         this.bullets.clear();
 
         ItemPool.recycle(items);
         this.items.clear();
 
-        // 보스와 쫄몹 화면에서 제거
         if (this.boss != null) {
             this.boss = null;
         }
 
         if (this.minionFormation != null) {
             for (EnemyShip minion : this.minionFormation) {
-                minion.destroy(); // 폭발 이펙트 없이 파괴
+                minion.destroy();
             }
         }
     }
@@ -462,13 +444,11 @@ public class BossScreen extends Screen {
     }
 
     /**
-     * 플레이어 입력 및 발사 처리 (리팩토링됨)
-     * 복잡도를 줄이기 위해 개별 선박 처리는 별도 함수로 위임합니다.
+     * 플레이어 입력 및 발사 처리
      */
     private void handlePlayerInputAndShooting() {
         for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
             Ship ship = this.ships[p];
-            // 배가 없거나 파괴되었으면 스킵
             if (ship != null && !ship.isDestroyed()) {
                 handleSingleShipInput(p, ship);
             }
@@ -477,14 +457,12 @@ public class BossScreen extends Screen {
 
     /**
      * 개별 선박의 입력, 이동, 사격을 처리합니다.
-     * (handlePlayerInputAndShooting에서 분리됨)
      */
     private void handleSingleShipInput(int playerIndex, Ship ship) {
         boolean moveRight;
         boolean moveLeft;
         boolean fire;
 
-        // 플레이어 번호에 따른 키 입력 확인
         if (playerIndex == 0) {
             moveRight = inputManager.isP1RightPressed();
             moveLeft = inputManager.isP1LeftPressed();
@@ -495,11 +473,12 @@ public class BossScreen extends Screen {
             fire = inputManager.isP2ShootPressed();
         }
 
-        // 화면 경계 체크
-        boolean isRightBorder = ship.getPositionX() + ship.getWidth() + ship.getSpeed() > this.width - 1;
-        boolean isLeftBorder = ship.getPositionX() - ship.getSpeed() < 1;
+        boolean isRightBorder =
+                ship.getPositionX() + ship.getWidth()
+                        + ship.getSpeed() > this.width - 1;
+        boolean isLeftBorder =
+                ship.getPositionX() - ship.getSpeed() < 1;
 
-        // 이동 처리
         if (moveRight && !isRightBorder) {
             ship.moveRight();
         }
@@ -507,7 +486,6 @@ public class BossScreen extends Screen {
             ship.moveLeft();
         }
 
-        // 발사 처리
         if (fire && ship.shoot(this.bullets)) {
             SoundManager.playOnce(SOUND_SHOOT);
             state.incBulletsShot(playerIndex);
@@ -526,12 +504,12 @@ public class BossScreen extends Screen {
     /** 보스 및 쫄몹 로직 업데이트 */
     private void updateBossAndMinions() {
         if (this.boss != null && this.boss.getHp() > 0) {
-            this.boss.update(); // Boss moves, checks invuln, fires
+            this.boss.update();
         }
 
         if (this.minionFormation != null) {
-            this.minionFormation.update(); // Minions move
-            this.minionFormation.shoot(this.bullets); // Minions shoot
+            this.minionFormation.update();
+            this.minionFormation.shoot(this.bullets);
         }
     }
 
@@ -549,25 +527,20 @@ public class BossScreen extends Screen {
         drawManager.setLastLife(state.getLivesRemaining() == 1);
     }
 
-    /** * 보스 사망 및 레벨 종료 처리
-     * (복잡도 해결: 업적 계산 로직을 별도 함수로 분리함)
-     */
+    /** 보스 사망 및 레벨 종료 처리 */
     private void handleEndOfLevel() {
-        // End Condition: Boss HP <= 0
-        if (this.boss != null && this.boss.getHp() <= 0 && !this.levelFinished) {
+        if (this.boss != null && this.boss.getHp() <= 0
+                && !this.levelFinished) {
             bossScreenLogger.info("Boss defeated!");
 
-            // 타이머 정지
             this.bossTimer.stop();
             state.setBossClearTime(this.bossTimer.getDuration());
 
-            // Recycle entities (리소스 정리)
             BulletPool.recycle(this.bullets);
             this.bullets.clear();
             ItemPool.recycle(items);
             this.items.clear();
 
-            // Clear remaining minions (쫄몹 정리)
             if (this.minionFormation != null) {
                 for (EnemyShip minion : this.minionFormation) {
                     minion.destroy();
@@ -577,42 +550,40 @@ public class BossScreen extends Screen {
             this.levelFinished = true;
             this.screenFinishedCooldown.reset();
 
-            // [핵심] 업적 부여 로직을 별도 함수로 위임하여 복잡도를 낮춤
             grantBossVictoryAchievements();
         }
 
-        // Screen transition (화면 전환)
-        if (this.levelFinished && this.screenFinishedCooldown.checkFinished() && !achievementManager.hasPendingToasts()) {
+        if (this.levelFinished
+                && this.screenFinishedCooldown.checkFinished()
+                && !achievementManager.hasPendingToasts()) {
             this.isRunning = false;
         }
     }
 
     /**
      * 보스 처치 시 승리 업적을 계산하고 부여합니다.
-     * (handleEndOfLevel에서 분리됨)
      */
     private void grantBossVictoryAchievements() {
-        // Survivor (한 대도 안 맞음)
         if (!this.tookDamageThisLevel) {
             achievementManager.unlock("Survivor");
         }
 
-        // 명중률 계산
-        int totalHitsLanded = state.getShipsDestroyed() + this.boss.getMaxHp();
+        int totalHitsLanded =
+                state.getShipsDestroyed() + this.boss.getMaxHp();
         int totalBulletsShot = state.getBulletsShot();
         double accuracy = 0.0;
 
         if (totalBulletsShot > 0) {
-            accuracy = (double) totalHitsLanded / (double) totalBulletsShot;
+            accuracy = (double) totalHitsLanded
+                    / (double) totalBulletsShot;
         }
 
-        // Sharpshooter (명중률 80% 이상)
         if (accuracy >= 0.8) {
             achievementManager.unlock("Sharpshooter");
         }
 
-        // Perfect Shooter (명중률 100%)
-        if (totalBulletsShot > 0 && totalBulletsShot == totalHitsLanded) {
+        if (totalBulletsShot > 0
+                && totalBulletsShot == totalHitsLanded) {
             achievementManager.unlock("Perfect Shooter");
         }
     }
@@ -633,66 +604,73 @@ public class BossScreen extends Screen {
         drawManager.drawExplosions();
         drawManager.updateGameSpace(); // Background stars
 
-        // Draw players
         for (Ship s : this.ships) {
             if (s != null) {
-                drawManager.drawEntity(s, s.getPositionX(), s.getPositionY());
+                drawManager.drawEntity(s,
+                        s.getPositionX(), s.getPositionY());
             }
         }
 
-        // Draw Boss
         if (this.boss != null && this.boss.getHp() > 0) {
-            drawManager.drawEntity(this.boss, this.boss.getPositionX(), this.boss.getPositionY());
+            drawManager.drawEntity(this.boss,
+                    this.boss.getPositionX(),
+                    this.boss.getPositionY());
         }
 
-        // Draw Minions
         if (this.minionFormation != null) {
             this.minionFormation.draw();
         }
 
-        // Draw Bullets
         for (Bullet bullet : this.bullets) {
-            drawManager.drawEntity(bullet, bullet.getPositionX(), bullet.getPositionY());
+            drawManager.drawEntity(bullet,
+                    bullet.getPositionX(),
+                    bullet.getPositionY());
         }
 
-        // Draw items
         for (Item item : this.items) {
-            drawManager.drawEntity(item, item.getPositionX(), item.getPositionY());
+            drawManager.drawEntity(item,
+                    item.getPositionX(),
+                    item.getPositionY());
         }
 
-        // Draw Top UI (Score, Lives, Coins)
-//        drawManager.drawScore(this, state.getScore());
         drawManager.drawBossTimer(this, this.bossTimer.getDuration());
-        drawManager.drawLives(this, state.getLivesRemaining(), state.isCoop());
+        drawManager.drawLives(this, state.getLivesRemaining(),
+                state.isCoop());
         drawManager.drawCoins(this, state.getCoins());
         drawManager.drawLevel(this, this.state.getLevel());
-        drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
+        drawManager.drawHorizontalLine(this,
+                SEPARATION_LINE_HEIGHT - 1);
         if (this.inventory != null && this.inputDelay.checkFinished()) {
-            drawManager.drawItemInventory(this, this.inventory, 40, SEPARATION_LINE_HEIGHT -40);
+            drawManager.drawItemInventory(
+                    this, this.inventory,
+                    40, SEPARATION_LINE_HEIGHT - 40);
         }
 
-        // Draw Boss HP Bar
         if (this.boss != null) {
-            drawManager.drawBossHPBar(this, this.boss.getHp(), this.boss.getMaxHp());
+            drawManager.drawBossHPBar(this,
+                    this.boss.getHp(), this.boss.getMaxHp());
         }
 
-        // Draw Boss Timer
         drawManager.drawBossTimer(this, this.bossTimer.getDuration());
 
-        // Draw Minion count
         if (this.minionFormation != null) {
-            drawManager.drawShipCount(this, this.minionFormation.getShipCount());
+            drawManager.drawShipCount(this,
+                    this.minionFormation.getShipCount());
         }
 
-        // Draw Countdown
         if (!this.inputDelay.checkFinished()) {
-            int countdown = (int) ((INPUT_DELAY - (System.currentTimeMillis() - this.gameStartTime)) / 1000);
-            drawManager.drawCountDown(this, this.state.getLevel(), countdown, false); // false for bonus life
-            drawManager.drawHorizontalLine(this, this.height / 2 - this.height / 12);
-            drawManager.drawHorizontalLine(this, this.height / 2 + this.height / 12);
+            int countdown = (int) ((INPUT_DELAY
+                    - (System.currentTimeMillis() - this.gameStartTime))
+                    / 1000);
+            drawManager.drawCountDown(this,
+                    this.state.getLevel(),
+                    countdown, false);
+            drawManager.drawHorizontalLine(this,
+                    this.height / 2 - this.height / 12);
+            drawManager.drawHorizontalLine(this,
+                    this.height / 2 + this.height / 12);
         }
 
-        // Draw Achievement Toasts
         drawManager.drawAchievementToasts(
                 this,
                 (this.achievementManager != null)
@@ -700,20 +678,12 @@ public class BossScreen extends Screen {
                         : Collections.emptyList()
         );
 
-        // Draw Pause Overlay
         if (this.isPaused) {
             drawManager.drawPauseOverlay(this);
         }
 
-        // --- Revive UI ---
-        if (this.revivePhase == RevivePhase.REVIVE_PROMPT) {
-            drawManager.drawRevivePrompt(this, this.reviveSelection);
-        }
-
-        if (this.revivePhase == RevivePhase.REVIVE_RESULT) {
-            drawManager.drawReviveFail(this, this.reviveFailMessage);
-        }
-        // -------------------
+        // Revive UI 공통 헬퍼
+        drawReviveUiIfNeeded(drawManager);
 
         drawMessages();
 
@@ -760,18 +730,15 @@ public class BossScreen extends Screen {
 
     /**
      * 총알과 엔티티 간의 충돌을 관리합니다.
-     * (복잡도 해결: 충돌 로직을 대상별로 분리함)
      */
     private void manageCollisions() {
         Set<Bullet> recyclable = new HashSet<>();
         for (Bullet bullet : this.bullets) {
             if (bullet.getSpeed() > 0) {
-                // 적 총알 -> 플레이어 충돌 확인
                 if (handleEnemyBulletCollision(bullet)) {
                     recyclable.add(bullet);
                 }
             } else {
-                // 플레이어 총알 -> 적 충돌 확인
                 if (handlePlayerBulletCollision(bullet)) {
                     recyclable.add(bullet);
                 }
@@ -787,9 +754,13 @@ public class BossScreen extends Screen {
     private boolean handleEnemyBulletCollision(Bullet bullet) {
         for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
             Ship ship = this.ships[p];
-            if (ship != null && !ship.isDestroyed() && checkCollision(bullet, ship) && !this.levelFinished) {
-                // 플레이어 피격 처리
-                drawManager.triggerExplosion(ship.getPositionX(), ship.getPositionY(), false, state.getLivesRemaining() == 1);
+            if (ship != null && !ship.isDestroyed()
+                    && checkCollision(bullet, ship)
+                    && !this.levelFinished) {
+
+                drawManager.triggerExplosion(
+                        ship.getPositionX(), ship.getPositionY(),
+                        false, state.getLivesRemaining() == 1);
                 ship.addHit();
                 ship.destroy();
                 SoundManager.playOnce(SOUND_EXPLOSION);
@@ -805,7 +776,7 @@ public class BossScreen extends Screen {
                 }
                 // ------------------------------
 
-                return true; // 충돌 발생함
+                return true;
             }
         }
         return false;
@@ -818,12 +789,10 @@ public class BossScreen extends Screen {
         final int ownerId = bullet.getOwnerPlayerId();
         final int pIdx = (ownerId == 2) ? 1 : 0;
 
-        // 1. 쫄몹 충돌 확인
         if (handleMinionCollision(bullet, pIdx)) {
-            return true; // 쫄몹에 맞았으면 보스 체크 안 함
+            return true;
         }
 
-        // 2. 보스 충돌 확인
         return handleBossCollision(bullet);
     }
 
@@ -833,17 +802,23 @@ public class BossScreen extends Screen {
     private boolean handleMinionCollision(Bullet bullet, int pIdx) {
         if (this.minionFormation != null) {
             for (EnemyShip enemyShip : this.minionFormation) {
-                if (!enemyShip.isDestroyed() && checkCollision(bullet, enemyShip)) {
+                if (!enemyShip.isDestroyed()
+                        && checkCollision(bullet, enemyShip)) {
                     enemyShip.hit();
 
                     if (enemyShip.isDestroyed()) {
                         int points = enemyShip.getPointValue();
                         state.addCoins(pIdx, enemyShip.getCoinValue());
-                        drawManager.triggerExplosion(enemyShip.getPositionX(), enemyShip.getPositionY(), true, false);
+                        drawManager.triggerExplosion(
+                                enemyShip.getPositionX(),
+                                enemyShip.getPositionY(),
+                                true, false);
                         state.addScore(pIdx, points);
                         state.incShipsDestroyed(pIdx);
 
-                        Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
+                        Item drop =
+                                engine.ItemManager.getInstance()
+                                        .obtainDrop(enemyShip);
                         if (drop != null) {
                             this.items.add(drop);
                         }
@@ -851,7 +826,7 @@ public class BossScreen extends Screen {
                         this.minionFormation.destroy(enemyShip);
                         SoundManager.playOnce("sound/invaderkilled.wav");
                     }
-                    return true; // 충돌 발생
+                    return true;
                 }
             }
         }
@@ -862,34 +837,33 @@ public class BossScreen extends Screen {
      * 플레이어 총알이 보스에게 맞았는지 확인합니다.
      */
     private boolean handleBossCollision(Bullet bullet) {
-        if (this.boss != null && this.boss.getHp() > 0 && checkCollision(bullet, this.boss)) {
+        if (this.boss != null && this.boss.getHp() > 0
+                && checkCollision(bullet, this.boss)) {
             if (this.boss.isInvulnerable()) {
-                // 보스 무적 상태일 때 메시지 처리
-                if (this.invulnerableMsgCount < MAX_INVULNERABLE_MSG_SHOWS) {
+                if (this.invulnerableMsgCount
+                        < MAX_INVULNERABLE_MSG_SHOWS) {
                     this.invulnerableMsgCooldown.reset();
                     this.invulnerableMsgCount++;
                 }
             } else {
-                // 데미지 적용
                 this.boss.onHit(1);
             }
 
-            // 보스 사망 체크
             if (this.boss.getHp() <= 0) {
                 drawManager.triggerExplosion(
-                        this.boss.getPositionX() + this.boss.getWidth() / 2,
-                        this.boss.getPositionY() + this.boss.getHeight() / 2,
+                        this.boss.getPositionX()
+                                + this.boss.getWidth() / 2,
+                        this.boss.getPositionY()
+                                + this.boss.getHeight() / 2,
                         true, true
                 );
                 SoundManager.stop();
                 SoundManager.playOnce(SOUND_EXPLOSION);
             }
-            return true; // 충돌 발생
+            return true;
         }
         return false;
     }
-
-
 
     /**
      * Returns a GameState object representing the status of the game.
@@ -901,16 +875,17 @@ public class BossScreen extends Screen {
     }
 
     private void drawMessages() {
-        int x = 10; // 왼쪽 하단 X 좌표
-        int y = this.height - 20; // 왼쪽 하단 Y 좌표 (텍스트 베이스라인)
+        int x = 10;
+        int y = this.height - 20;
 
-        // 2페이즈 메시지가 활성화 상태인지 확인 (노란색)
-        if (this.phase2MsgCooldown != null && !this.phase2MsgCooldown.checkFinished()) {
-            drawManager.drawString(MSG_PHASE_2, x, y, java.awt.Color.YELLOW);
-        }
-        // (else if 사용) 2페이즈 메시지가 아닐 때만 무적 메시지 확인 (하얀색)
-        else if (this.invulnerableMsgCooldown != null && !this.invulnerableMsgCooldown.checkFinished()) {
-            drawManager.drawString(MSG_MINIONS_FIRST, x, y, java.awt.Color.WHITE);
+        if (this.phase2MsgCooldown != null
+                && !this.phase2MsgCooldown.checkFinished()) {
+            drawManager.drawString(MSG_PHASE_2,
+                    x, y, java.awt.Color.YELLOW);
+        } else if (this.invulnerableMsgCooldown != null
+                && !this.invulnerableMsgCooldown.checkFinished()) {
+            drawManager.drawString(MSG_MINIONS_FIRST,
+                    x, y, java.awt.Color.WHITE);
         }
     }
 
@@ -919,98 +894,39 @@ public class BossScreen extends Screen {
      * These achievements can be unlocked at any time during gameplay.
      */
     public void checkInGameAchievements() {
-        // First Blood (Checks if this is the first kill of the game)
-        // state.getShipsDestroyed()는 GameState에 의해 관리되므로 보스전 쫄몹을 잡아도 1이 됩니다.
         if (state.getShipsDestroyed() == 1) {
             achievementManager.unlock("First Blood");
         }
 
-        // 50 Bullets
         if (state.getBulletsShot() >= 50) {
             achievementManager.unlock("50 Bullets");
         }
 
-        // Get 3000 Score
         if (state.getScore() >= 3000) {
             achievementManager.unlock("Get 3000 Score");
         }
     }
 
-    // ----------------------------
-    // Revive Prompt Input Handler
-    // ----------------------------
-    private void handleRevivePromptInput() {
-        if (inputManager.isKeyDown(KeyEvent.VK_UP)) {
-            reviveSelection = 0; // YES
-        }
-        if (inputManager.isKeyDown(KeyEvent.VK_DOWN)) {
-            reviveSelection = 1; // NO
-        }
+    // ------------------------------------------------------------------
+    // ReviveScreen 콜백 구현부
+    // ------------------------------------------------------------------
 
-        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) || inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-            if (reviveSelection == 0) { // YES
-                boolean ok = reviveManager.tryRevive();
-                if (ok) {
-                    respawnPlayer();
-                    this.revivePhase = RevivePhase.PLAYING;
-                } else {
-                    if (!reviveManager.canRevive(state.getLevel())) {
-                        reviveFailMessage = "It's already revived at this level";
-                    } else if (state.getCoins() < 50) {
-                        reviveFailMessage = "You don't have enough coins";
-                    } else {
-                        reviveFailMessage = "You can't revive";
-                    }
-                    this.revivePhase = RevivePhase.REVIVE_RESULT;
-
-                    InputManager.resetKeys();
-                }
-            } else { // NO
-                // 거절 시 점수 화면(2)으로 이동
-                this.returnCode = 2;
-                this.isRunning = false;
-            }
-        }
-    }
-
-
-    // ----------------------------
-    // Revive Result Input Handler
-    // ----------------------------
-    private void handleReviveResultInput() {
-        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
-                inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-            // 실패 메시지 확인 후에도 점수 화면(2)으로 이동
-            this.returnCode = 2;
-            this.isRunning = false;
-        }
-    }
-
-    // ----------------------------
-    // Respawn Player (부활 위치)
-    // ----------------------------
-    private void respawnPlayer() {
-        // 부활 시 추가 로직이 필요하면 여기에 작성
-        // 현재는 ReviveManager.tryRevive()에서 목숨값은 증가시켰으므로,
-        // 화면 상태만 돌려주면 됨
+    @Override
+    protected void onReviveSuccess() {
         this.levelFinished = false;
         this.screenFinishedCooldown.reset();
         this.revivePhase = RevivePhase.PLAYING;
     }
 
-    // --------------------------------------------
-    // RevivePrompt UI.phase handler
-    // --------------------------------------------
-    private void handleRevivePrompt() {
-        handleRevivePromptInput();
-        draw();
+    @Override
+    protected void onReviveRejected() {
+        this.returnCode = 2;
+        this.isRunning = false;
     }
 
-    // --------------------------------------------
-    // Revive Failure
-    // --------------------------------------------
-    private void handleReviveFailed() {
-        handleReviveResultInput();
-        draw();
+    @Override
+    protected void onReviveResultAcknowledged() {
+        this.returnCode = 2;
+        this.isRunning = false;
     }
 }
