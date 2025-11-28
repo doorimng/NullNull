@@ -1705,7 +1705,45 @@ public final class DrawManager {
             }
         }
     }
+    /**
+     * Draws a column of high scores at a specific X position.
+     * [Refactored] Generalized to support both 1P and 2P columns.
+     *
+     * @param screen Screen to draw on.
+     * @param highScores List of high scores.
+     * @param xCenter The X-coordinate for the center of this column.
+     * @param label The label to show above the scores (e.g., "1P", "2P").
+     */
+    public void drawScoreColumn(final Screen screen, final List<Score> highScores, final int xCenter, final String label) {
+        backBufferGraphics.setColor(Color.GREEN);
+        int startY = screen.getHeight() / 3 + fontBigMetrics.getHeight() + 20;
+        int lineHeight = fontRegularMetrics.getHeight() + 5;
 
+        // Draw Column Label
+        drawCenteredRegularString(label, xCenter, startY - lineHeight * 2);
+
+        if (highScores == null || highScores.isEmpty()) {
+            backBufferGraphics.setColor(Color.GRAY);
+            drawCenteredRegularString("No Records", xCenter, startY);
+            return;
+        }
+
+        backBufferGraphics.setColor(Color.WHITE);
+        for (int i = 0; i < highScores.size(); i++) {
+            Score score = highScores.get(i);
+
+            // Time Formatting (MM:SS)
+            int totalSeconds = score.getScore() / 1000;
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+
+            // Format: "NAME   00:00"
+            String scoreString = String.format("%s   %02d:%02d", score.getName(), minutes, seconds);
+
+            // Draw centered at xCenter
+            drawCenteredRegularString(scoreString, xCenter, startY + lineHeight * i);
+        }
+    }
 
 
 
