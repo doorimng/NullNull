@@ -2,7 +2,6 @@ package screen;
 
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.sql.Array;
 import java.util.*;
 
 import engine.*;
@@ -17,16 +16,11 @@ public class ScoreScreen extends Screen {
 
     /** Milliseconds between changes in user selection. */
     private static final int SELECTION_TIME = 200;
-    /** Code of first mayus character. */
-    private static final int FIRST_CHAR = 65;
-    /** Code of last mayus character. */
-    private static final int LAST_CHAR = 90;
-    /** Code of max high score. */
-    private static final int MAX_HIGH_SCORE_NUM = 7;
     /** Maximum name length. */
     private static final int MAX_NAME_LENGTH = 5;
+    /** Code of max high score. */
+    private static final int MAX_HIGH_SCORE_NUM = 7;
 
-    // Added for persist per-player breakdown
     private final GameState gameState;
 
     /** Current score. */
@@ -41,79 +35,83 @@ public class ScoreScreen extends Screen {
     private int shipsDestroyed;
     /** List of past high scores. */
     private List<Score> highScores;
+
     /** Checks if current score is a new high score. */
     private boolean isNewRecord;
+    /** Check if the player cleared the level. */
+    private boolean isClear;
+
     /** Player name for record input. */
     private StringBuilder name;
-    /** Character of players name selected for change. */
-    private int nameCharSelected;
-    /** Make sure the name is less than 3 characters. */
-    private boolean showNameError = false;
+
+    /** [복구됨] Make sure the name is less than 3 characters. */
+    private boolean showNameError;
+
     /** Time between changes in user selection. */
     private Cooldown selectionCooldown;
     /** manages achievements.*/
     private AchievementManager achievementManager;
-    /** Total coins earned in the game. */
-    private int[] totalCoins = new int[2];
     /** check 1P/2P mode; */
     private String mode;
 
+    /** Flag to check if the user has released keys after screen transition. */
+    private boolean isInputReleased;
+
     /**
-     * Constructor, establishes the properties of the screen.
-     *
-     * @param width
-     *                  Screen width.
-     * @param height
-     *                  Screen height.
-     * @param fps
-     *                  Frames per second, frame rate at which the game is run.
-     * @param gameState
-     *                  Current game state.
-     * @param achievementManager
-     * 			            Achievement manager instance used to track and save player achievements.
-     * 			  2025-10-03  add generator parameter and comment
+     * Constructor.
      */
     public ScoreScreen(final int width, final int height, final int fps,
                        final GameState gameState, final AchievementManager achievementManager) throws IOException {
         super(width, height, fps);
-        this.gameState = gameState; // Added
+        this.gameState = gameState;
 
         this.score = gameState.getScore();
         this.livesRemaining = gameState.getLivesRemaining();
         this.coins = gameState.getCoins();
-        this.name = new StringBuilder();
         this.bulletsShot = gameState.getBulletsShot();
         this.shipsDestroyed = gameState.getShipsDestroyed();
-        this.totalCoins[0] = gameState.getCoins(); // ADD THIS LINE
+
+        // 1. 클리어 여부 판단 (목숨이 있어야 클리어)
+        this.isClear = this.livesRemaining > 0;
+
         this.isNewRecord = false;
         this.name = new StringBuilder();
-        this.nameCharSelected = 0;
+        this.showNameError = false; // 초기화
         this.selectionCooldown = Core.getCooldown(SELECTION_TIME);
         this.selectionCooldown.reset();
+
+        // 키 뗌 확인을 위한 초기화 (false로 시작)
+        this.isInputReleased = false;
+
         this.achievementManager = achievementManager;
         this.mode = gameState.getCoop() ? "2P" : "1P";
 
-        try {
-            this.highScores = Core.getFileManager().loadHighScores(this.mode);
-            if (highScores.size() < MAX_HIGH_SCORE_NUM
-                    || highScores.get(highScores.size() - 1).getScore() < this.score)
-                this.isNewRecord = true;
-
-        } catch (IOException e) {
-            logger.warning("Couldn't load high scores!");
+        // 2. 클리어 시에만 신기록 판정 진행 (Time Attack)
+        if (this.isClear) {
+            int currentClearTime = gameState.getBossClearTime();
+            try {
+                this.highScores = Core.getFileManager().loadHighScores(this.mode);
+                // 기록이 없거나 꼴찌보다 내 시간이 빠르면 신기록
+                if (highScores.size() < MAX_HIGH_SCORE_NUM
+                        || highScores.get(highScores.size() - 1).getScore() > currentClearTime) {
+                    this.isNewRecord = true;
+                }
+            } catch (IOException e) {
+                logger.warning("Couldn't load high scores!");
+            }
+        } else {
+            // 실패 시 무조건 신기록 아님
+            this.isNewRecord = false;
         }
-        // clear last key
+
         inputManager.clearLastKey();
     }
 
     /**
      * Starts the action.
-     *
-     * @return Next screen code.
      */
     public final int run() {
         super.run();
-
         return this.returnCode;
     }
 
@@ -123,75 +121,113 @@ public class ScoreScreen extends Screen {
     protected final void update() {
         super.update();
 
-		draw();
-		if (this.inputDelay.checkFinished()) {
-			if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
-                // Return to main menu.
+        draw();
+
+        // -------------------------------------------------------
+        // [핵심 로직] 키 뗌 확인 (Key Release Check)
+        // 화면이 전환된 직후, 사용자가 이전에 누르고 있던 키(Space, Enter 등)를
+        // 뗄 때까지 입력을 처리하지 않고 기다립니다.
+        // -------------------------------------------------------
+        if (!this.isInputReleased) {
+            if (inputManager.isKeyDown(KeyEvent.VK_SPACE) ||
+                    inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
+                    inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
+                return; // 키가 눌려있으면 아무 동작 안 함
+            }
+            // 모든 키가 떼어졌으면 입력 허용 상태로 전환
+            this.isInputReleased = true;
+        }
+
+        // 여기서부터는 실제 입력 처리 로직 (isInputReleased가 true일 때만 도달)
+
+        // -------------------------------------------------------
+        // 1. 실패(GAME OVER) 시 로직
+        // -------------------------------------------------------
+        if (!this.isClear) {
+            // ESC: 맵으로 나가기 (Core 루프의 시작인 MapScreen으로 이동하기 위해 returnCode 2 반환)
+            if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
                 SoundManager.playOnce("sound/select.wav");
-				this.returnCode = 1;
-				this.isRunning = false;
-				if (this.isNewRecord) {
-					saveScore();
-					saveAchievement(); //2025-10-03 call method for save achievement released
-				}
-			} else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-                // name too short -> return
-                if (this.name.length() < 3) return;
-				// Play again.
+                this.returnCode = 2; // [요청 2] 1(Title) -> 2(Restart Loop -> MapScreen)
+                this.isRunning = false;
+            }
+            // SPACE: 다시 시작 (같은 스테이지 도전)
+            else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
                 SoundManager.playOnce("sound/select.wav");
-				this.returnCode = 2;
-				this.isRunning = false;
-				if (this.isNewRecord) {
-					saveScore();
-					saveAchievement(); // 2025-10-03 call method for save achievement released
-				}
-			}
+                this.returnCode = 2; // Restart
+                this.isRunning = false;
+            }
+            return;
+        }
 
-			// Handle backspace
-			if (inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
-					&& this.selectionCooldown.checkFinished()) {
-				if (this.name.length() > 0) {
-					this.name.deleteCharAt(this.name.length() - 1);
-					this.selectionCooldown.reset();
-				}
-			}
+        // -------------------------------------------------------
+        // 2. 성공(CLEAR) 시 로직
+        // -------------------------------------------------------
 
-			// Handle character input
-			char typedChar = inputManager.getLastCharTyped();
-			if (typedChar != '\0') {
-				// Checks the name is not short when you press the space bar
-				if (typedChar == ' ') {
-					if (this.name.length() < 3) {
-						// System.out.println("too short!!");
-						this.showNameError = true;
-					}
-				}
+        // ESC 키: 메인 타이틀로 이동 (1번)
+        if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
+            SoundManager.playOnce("sound/select.wav");
+            this.returnCode = 1; // Title
+            this.isRunning = false;
+            if (this.isNewRecord) {
+                saveScore();
+                saveAchievement();
+            }
+        }
+        // SPACE 키: 저장 후 메인 타이틀로 이동 (1번)
+        else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
+            // [복구됨] 이름이 3글자 미만이면 에러 표시하고 진행 안 함
+            if (this.name.length() < 3) {
+                this.showNameError = true;
+                return;
+            }
 
-				// Check if it's a valid character (alphanumeric only)
-				else if ((Character.isLetterOrDigit(typedChar))
-						&& this.name.length() < MAX_NAME_LENGTH) {
-					this.name.append(Character.toUpperCase(typedChar));
+            SoundManager.playOnce("sound/select.wav");
 
-				}
-			}
-		}
+            this.returnCode = 1; // Title
 
+            this.isRunning = false;
+            if (this.isNewRecord) {
+                saveScore();
+                saveAchievement();
+            }
+        }
+
+        // 이름 입력 (Backspace)
+        if (inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
+                && this.selectionCooldown.checkFinished()) {
+            if (this.name.length() > 0) {
+                this.name.deleteCharAt(this.name.length() - 1);
+                this.selectionCooldown.reset();
+                this.showNameError = false; // 글자 지우면 에러 해제
+            }
+        }
+
+        // 이름 입력 (문자)
+        char typedChar = inputManager.getLastCharTyped();
+        if (typedChar != '\0') {
+            if (Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
+                this.name.append(Character.toUpperCase(typedChar));
+                this.showNameError = false; // 글자 입력하면 에러 해제
+            }
+        }
     }
 
     /**
-     * Saves the score as a high score.
-     * 2025-10-18
-     * Add ability that distinguish duplicate names and save higher scores
+     * Saves the score (TIME) as a high score.
      */
     private void saveScore() {
         String mode = (gameState != null && gameState.isCoop()) ? "2P" : "1P";
         String newName = new String(this.name);
-        Score newScore = new Score(newName, this.gameState, mode);
+        int clearTime = this.gameState.getBossClearTime();
+
+        Score newScore = new Score(newName, clearTime, mode);
+
         boolean foundAndReplaced = false;
         for (int i = 0; i < highScores.size(); i++) {
             Score existingScore = highScores.get(i);
             if (existingScore.getName().equals(newName)) {
-                if (newScore.getScore() > existingScore.getScore()) {
+                // [확인] Time Attack이므로 시간이 더 짧을 때 갱신
+                if (newScore.getScore() < existingScore.getScore()) {
                     highScores.set(i, newScore);
                     foundAndReplaced = true;
                 } else {
@@ -200,24 +236,19 @@ public class ScoreScreen extends Screen {
                 break;
             }
         }
-        if (!foundAndReplaced) {
-            highScores.add(newScore);
-        }
+        if (!foundAndReplaced) highScores.add(newScore);
+
         Collections.sort(highScores);
         if (highScores.size() > MAX_HIGH_SCORE_NUM)
             highScores.remove(highScores.size() - 1);
+
         try {
             Core.getFileManager().saveHighScores(highScores, mode);
         } catch (IOException e) {
-            logger.warning("Couldn't load high scores!");
+            logger.warning("Couldn't save high scores!");
         }
     }
 
-    /**
-     * Save the achievement released.
-     * 2025-10-03
-     * add new method
-     */
     private void saveAchievement() {
         try {
             this.achievementManager.saveToFile(new String(this.name), this.mode);
@@ -232,54 +263,52 @@ public class ScoreScreen extends Screen {
     private void draw() {
         drawManager.initDrawing(this);
 
-		drawManager.drawGameOver(this, this.inputDelay.checkFinished());
+        // 1. [타이틀 및 안내 문구]
+        drawManager.drawGameTitle(this, this.isClear);
 
-        float accuracy = (this.bulletsShot > 0)
-                ? (float) this.shipsDestroyed / this.bulletsShot
-                : 0f;
+        // 2. [클리어 시간 표시]
+        if (this.isClear) {
+            int timeMs = this.gameState.getBossClearTime();
+            long minutes = (timeMs / 1000) / 60;
+            long seconds = (timeMs / 1000) % 60;
+            String timeString = String.format("Clear Time: %02d:%02d", minutes, seconds);
+            drawManager.drawCenteredRegularString(this, timeString, this.getHeight() / 4 + 20);
+        }
 
-		// 2P mode: edit to include co-op + individual score/coins
-		if (this.gameState != null && this.gameState.isCoop()) {
-			// team summary
-			drawManager.drawResults(this,
-					this.gameState.getScore(),
-                    this.gameState.getCoins(),// team score
-					this.gameState.getLivesRemaining(),
-					this.gameState.getShipsDestroyed(),
-					0f,// leaving out team accuracy
-                    this.isNewRecord,
-                    false // Draw accuracy for 2P mode
-			);
+        // 3. [결과 통계 표시]
+        boolean isFailure = !this.isClear;
 
-            // show per-player lines when in 2P mode
+        if (this.gameState != null && this.gameState.isCoop()) {
+            // [2P 모드]
+            drawManager.drawResults(this, this.gameState.getScore(), this.gameState.getCoins(),
+                    this.gameState.getLivesRemaining(), this.gameState.getShipsDestroyed(),
+                    0f, this.isNewRecord, false, isFailure);
 
             float p1Acc = this.gameState.getBulletsShot(0) > 0 ? (float) this.gameState.getShipsDestroyed(0) / this.gameState.getBulletsShot(0) : 0f;
             float p2Acc = this.gameState.getBulletsShot(1) > 0 ? (float) this.gameState.getShipsDestroyed(1) / this.gameState.getBulletsShot(1) : 0f;
-
             String p1 = String.format("P1  %04d  |  acc %.2f%%", this.gameState.getScore(0), p1Acc * 100f);
             String p2 = String.format("P2  %04d  |  acc %.2f%%", this.gameState.getScore(1), p2Acc * 100f);
 
-            int y;  // tweak these if you want
-            if (this.isNewRecord) {
-                y = this.getHeight() / 2 + 40; // Position if new record is True
-            } else {
-                y = this.getHeight() / 2 + 80; // Position if new record is False
-            }
+            int y = this.isNewRecord ? this.getHeight() / 2 + 40 : this.getHeight() / 2 + 80;
             drawManager.drawCenteredRegularString(this, p1, y);
-            drawManager.drawCenteredRegularString(this, p2, y + 20); // Increase spacing
+            drawManager.drawCenteredRegularString(this, p2, y + 20);
 
-		} else {
-			// 1P legacy summary with accuracy
-			float acc = (this.bulletsShot > 0) ? (float) this.shipsDestroyed / this.bulletsShot : 0f;
-            drawManager.drawResults(this, this.score, this.coins, this.livesRemaining, this.shipsDestroyed, acc, this.isNewRecord, true); // Draw accuracy for 1P mode
-		}
+        } else {
+            // [1P 모드]
+            float acc = (this.bulletsShot > 0) ? (float) this.shipsDestroyed / this.bulletsShot : 0f;
+            drawManager.drawResults(this, this.score, this.coins, this.livesRemaining,
+                    this.shipsDestroyed, acc, this.isNewRecord, true, isFailure);
+        }
 
-
-		drawManager.drawNameInput(this, this.name, this.isNewRecord);
-		if (showNameError)
-			drawManager.drawNameInputError(this);
+        // 4. [이름 입력창] - 성공했을 때만 표시
+        if (this.isClear) {
+            drawManager.drawNameInput(this, this.name, this.isNewRecord);
+            // [복구됨] 에러 메시지 표시
+            if (this.showNameError) {
+                drawManager.drawNameInputError(this);
+            }
+        }
 
         drawManager.completeDrawing(this);
     }
-
 }

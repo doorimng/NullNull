@@ -44,7 +44,7 @@ public class Score implements Comparable<Score> {
      */
     public Score(final String name, final GameState gs, final String mode) {
         this.name = name;
-        this.score = gs.getScore();
+        this.score = gs.getBossClearTime();
         this.levelReached = gs.getLevel();
         this.livesRemaining = gs.getLivesRemaining();
         this.mode = mode; // add 1P/2P mode
@@ -116,14 +116,14 @@ public class Score implements Comparable<Score> {
      * Orders the scores descending by score.
      *
      * @param other
-     *              Score to compare the current one with.
+     * Score to compare the current one with.
      * @return Comparison between the two scores. Positive if the current one is
-     *         smaller, positive if its bigger, zero if it's the same.
+     * smaller, positive if its bigger, zero if it's the same.
      */
 
     @Override
     public final int compareTo(final Score other) {
-        return Integer.compare(other.getScore(), this.score); // descending
+        return Integer.compare(this.score, other.getScore()); // ascending
     }
 
     @Override

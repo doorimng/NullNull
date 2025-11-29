@@ -35,6 +35,8 @@ public class GameState {
 	private int teamLives;
 	private int teamLivesCap;
 
+    private int bossClearTime = 0;
+
 	/** Current coin count. */ // ADD THIS LINE
     private static int coins = 0; // ADD THIS LINE - edited for 2P mode
 
@@ -432,6 +434,12 @@ public class GameState {
         return state.cooldown.getDuration();
     }
 
+    public void setBossClearTime(long duration) {
+        this.bossClearTime = (int) duration;
+    }
 
+    public int getBossClearTime() {
+        return this.bossClearTime;
+    }
 
 }

@@ -2,33 +2,35 @@ package screen;
 
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.logging.Logger;
+
 import engine.Core;
 import engine.Score;
 import engine.SoundManager;
 
 /**
  * Implements the high scores screen, it shows player records.
+ * Refactored to reduce duplication and support both 1P/2P.
  *
  * @author <a href="mailto:RobertoIA1987@gmail.com">Roberto Izquierdo Amo</a>
- *
  */
 public class HighScoreScreen extends Screen {
 
     /** List of past high scores. */
-    private List<Score> highScores1P, highScores2P;
+    private List<Score> highScores1P;
+    private List<Score> highScores2P;
 
     /**
      * Constructor, establishes the properties of the screen.
      *
      * @param width
-     *            Screen width.
+     * Screen width.
      * @param height
-     *            Screen height.
+     * Screen height.
      * @param fps
-     *            Frames per second, frame rate at which the game is run.
+     * Frames per second, frame rate at which the game is run.
      */
     public HighScoreScreen(final int width, final int height, final int fps) {
         super(width, height, fps);
@@ -36,18 +38,32 @@ public class HighScoreScreen extends Screen {
 
         this.returnCode = 1;
 
+        // [Refactoring] Use helper method to load scores for both modes
+        this.highScores1P = loadAndSortScores("1P");
+        this.highScores2P = loadAndSortScores("2P");
+    }
+
+    /**
+     * Loads, sorts, and trims high scores for a specific mode.
+     * Reduces code duplication for 1P and 2P loading logic.
+     *
+     * @param mode "1P" or "2P"
+     * @return Sorted list of top 7 scores
+     */
+    private List<Score> loadAndSortScores(String mode) {
         try {
-            this.highScores1P = Core.getFileManager().loadHighScores("1P");
-            this.highScores2P = Core.getFileManager().loadHighScores("2P");
-            //상위 7명만 남기기
-            highScores1P.sort((a, b) -> b.getScore() - a.getScore());
-            if (highScores1P.size() > 7) highScores1P = highScores1P.subList(0, 7);
+            List<Score> scores = Core.getFileManager().loadHighScores(mode);
+            // Sort by time (ascending) for Time Attack
+            scores.sort((a, b) -> Integer.compare(a.getScore(), b.getScore()));
 
-            highScores2P.sort((a, b) -> b.getScore() - a.getScore());
-            if (highScores2P.size() > 7) highScores2P = highScores2P.subList(0, 7);
-
+            // Keep only top 7
+            if (scores.size() > 7) {
+                return scores.subList(0, 7);
+            }
+            return scores;
         } catch (NumberFormatException | IOException e) {
-            logger.warning("Couldn't load high scores!");
+            logger.warning("Couldn't load high scores for " + mode);
+            return Collections.emptyList();
         }
     }
 
@@ -59,7 +75,6 @@ public class HighScoreScreen extends Screen {
     public final int run() {
         super.run();
         SoundManager.playOnce("sound/select.wav");
-
         return this.returnCode;
     }
 
@@ -86,9 +101,7 @@ public class HighScoreScreen extends Screen {
             }
         }
     }
-    private List<Score> getPlayerScores(String mode) {
-        return mode.equals("1P") ? highScores1P : highScores2P;
-    }
+
     /**
      * Draws the elements associated with the screen.
      */
@@ -96,8 +109,13 @@ public class HighScoreScreen extends Screen {
         drawManager.initDrawing(this);
 
         drawManager.drawHighScoreMenu(this);
-        drawManager.drawHighScores(this, getPlayerScores("1P"), "1P"); // Left column
-        drawManager.drawHighScores(this, getPlayerScores("2P"), "2P"); // Right column
+
+        // [Refactoring] Draw both columns using the generalized method
+        // 1P Scores (Left side)
+        drawManager.drawScoreColumn(this, highScores1P, width / 4, "1P");
+
+        // 2P Scores (Right side)
+        drawManager.drawScoreColumn(this, highScores2P, width / 4 * 3, "2P");
 
         // hover highlight
         int mx = inputManager.getMouseX();

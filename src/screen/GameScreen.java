@@ -4,17 +4,10 @@ import java.awt.event.KeyEvent;
 import java.util.HashSet;
 import java.util.Set;
 
-import Animations.Explosion;
-import engine.Cooldown;
-import engine.Core;
-import engine.GameSettings;
-import engine.GameState;
 import engine.*;
-import engine.SoundManager;
 import entity.*;
 
 // NEW Item code
-
 
 /**
  * Implements the game screen, where the action happens.(supports co-op with
@@ -23,7 +16,7 @@ import entity.*;
  * @author <a href="mailto:RobertoIA1987@gmail.com">Roberto Izquierdo Amo</a>
  *
  */
-public class GameScreen extends Screen {
+public class GameScreen extends ReviveScreen {
 
     /** Milliseconds until the screen accepts user input. */
     private static final int INPUT_DELAY = 6000;
@@ -39,11 +32,10 @@ public class GameScreen extends Screen {
     private static final int SCREEN_CHANGE_INTERVAL = 1500;
     /** Height of the interface separation line. */
     private static final int SEPARATION_LINE_HEIGHT = 68;
-      private static final int HIGH_SCORE_NOTICE_DURATION = 2000;
+    private static final int HIGH_SCORE_NOTICE_DURATION = 2000;
     private static boolean sessionHighScoreNotified = false;
 
-    /** For Check Achievement
-     * 2015-10-02 add new */
+    /** For Check Achievement */
     private AchievementManager achievementManager;
     /** Current game difficulty settings. */
     private GameSettings gameSettings;
@@ -81,63 +73,35 @@ public class GameScreen extends Screen {
     private int lives;
     private int bulletsShot;
     private int shipsDestroyed;
-    private Ship ship;
-    private Boss boss;
-    private ReviveManager reviveManager;
 
-    private enum RevivePhase {
-        PLAYING,
-        REVIVE_PROMPT,
-        REVIVE_RESULT,
-        EXITING
-    }
-    private RevivePhase revivePhase = RevivePhase.PLAYING;
-    private int reviveSelection = 0; // 0 = YES, 1 = NO
-    private String reviveFailMessage = "";
-
-
-
-
-
-    /** checks if player took damage
-     * 2025-10-02 add new variable
-     * */
+    /** checks if player took damage */
     private boolean tookDamageThisLevel;
     private boolean countdownSoundPlayed = false;
 
-    private final GameState state;
-
     private Ship.ShipType shipTypeP1;
     private Ship.ShipType shipTypeP2;
+
     /**
      * Constructor, establishes the properties of the screen.
      *
-     * @param gameState
-     *                     Current game state.
-     * @param gameSettings
-     *                     Current game settings.
-     * @param bonusLife
-     *                     Checks if a bonus life is awarded this level.
-     * @param width
-     *                     Screen width.
-     * @param height
-     *                     Screen height.
-     * @param fps
-     *                     Frames per second, frame rate at which the game is run.
-     * @param shipTypeP1
-     *                     Player 1's ship type.
-     * @param shipTypeP2
-     *                     Player 2's ship type.
-     * @param achievementManager
-     * 			               Achievement manager instance used to track and save player achievements.
-     * 			  2025-10-03 add generator parameter and comment
+     * @param gameState        Current game state.
+     * @param gameSettings     Current game settings.
+     * @param bonusLife        Checks if a bonus life is awarded this level.
+     * @param width            Screen width.
+     * @param height           Screen height.
+     * @param fps              Frames per second.
+     * @param shipTypeP1       Player 1's ship type.
+     * @param shipTypeP2       Player 2's ship type.
+     * @param achievementManager Achievement manager instance.
      */
     public GameScreen(final GameState gameState,
                       final GameSettings gameSettings, final boolean bonusLife,
-                      final int width, final int height, final int fps, final Ship.ShipType shipTypeP1, final Ship.ShipType shipTypeP2, final AchievementManager achievementManager) {
-        super(width, height, fps);
+                      final int width, final int height, final int fps,
+                      final Ship.ShipType shipTypeP1, final Ship.ShipType shipTypeP2,
+                      final AchievementManager achievementManager) {
 
-        this.state = gameState;
+        super(gameState, width, height, fps);
+
         this.gameSettings = gameSettings;
         this.bonusLife = bonusLife;
         this.shipTypeP1 = shipTypeP1;
@@ -150,17 +114,9 @@ public class GameScreen extends Screen {
         this.bulletsShot = gameState.getBulletsShot();
         this.shipsDestroyed = gameState.getShipsDestroyed();
 
-        // for check Achievement 2025-10-02 add
         this.achievementManager = achievementManager;
         this.tookDamageThisLevel = false;
 
-//        try {
-//            List<Score> highScores = Core.getFileManager().loadHighScores();
-//            this.topScore = highScores.isEmpty() ? 0 : highScores.get(0).getScore();
-//        } catch (IOException e) {
-//            logger.warning("Couldn't load high scores for checking!");
-//            this.topScore = 0;
-//        }
         this.highScoreNotified = false;
         this.highScoreNoticeStartTime = 0;
 
@@ -173,11 +129,12 @@ public class GameScreen extends Screen {
                 state.addLife(0, 1);  // singleplayer
             }
         }
-      // [ADD] ensure achievementManager is not null for popup system
-		if (this.achievementManager == null) this.achievementManager = new AchievementManager();
+        if (this.achievementManager == null) {
+            this.achievementManager = new AchievementManager();
+        }
     }
 
-      /**
+    /**
      * Resets the session high score notification flag.
      * Should be called when a new game starts from the main menu.
      */
@@ -191,7 +148,6 @@ public class GameScreen extends Screen {
     public final void initialize() {
         super.initialize();
 
-
         state.clearAllEffects();
 
         // Start background music for gameplay
@@ -201,46 +157,44 @@ public class GameScreen extends Screen {
         enemyShipFormation.attach(this);
 
         // 2P mode: create both ships, tagged to their respective teams
-        this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30, Entity.Team.PLAYER1, shipTypeP1, this.state); // P1
+        this.ships[0] = new Ship(this.width / 2 - 60, this.height - 30,
+                Entity.Team.PLAYER1, shipTypeP1, this.state); // P1
         this.ships[0].setPlayerId(1);
 
         // only allowing second ship to spawn when 2P mode is chosen
         if (state.isCoop()) {
-            this.ships[1] = new Ship(this.width / 2 + 60, this.height - 30, Entity.Team.PLAYER2, shipTypeP2, this.state); // P2
-
+            this.ships[1] = new Ship(this.width / 2 + 60, this.height - 30,
+                    Entity.Team.PLAYER2, shipTypeP2, this.state); // P2
             this.ships[1].setPlayerId(2);
         } else {
             this.ships[1] = null; // ensuring there's no P2 ship in 1P mode
         }
 
-
-        this.enemyShipSpecialCooldown = Core.getVariableCooldown(BONUS_SHIP_INTERVAL, BONUS_SHIP_VARIANCE);
+        this.enemyShipSpecialCooldown =
+                Core.getVariableCooldown(BONUS_SHIP_INTERVAL, BONUS_SHIP_VARIANCE);
         this.enemyShipSpecialCooldown.reset();
         this.enemyShipSpecialExplosionCooldown = Core.getCooldown(BONUS_SHIP_EXPLOSION);
         this.screenFinishedCooldown = Core.getCooldown(SCREEN_CHANGE_INTERVAL);
-        this.bullets = new HashSet<Bullet>();
+        this.bullets = new HashSet<>();
 
         // New Item Code
-        this.items = new HashSet<Item>();
+        this.items = new HashSet<>();
 
-		// Special input delay / countdown.
-		this.gameStartTime = System.currentTimeMillis();
-		this.inputDelay = Core.getCooldown(INPUT_DELAY);
-		this.inputDelay.reset();
+        // Special input delay / countdown.
+        this.gameStartTime = System.currentTimeMillis();
+        this.inputDelay = Core.getCooldown(INPUT_DELAY);
+        this.inputDelay.reset();
         drawManager.setDeath(false);
 
         this.isPaused = false;
         this.pauseCooldown = Core.getCooldown(300);
         this.returnMenuCooldown = Core.getCooldown(300);
 
-        this.reviveManager = new ReviveManager(this.state);
-        this.revivePhase = RevivePhase.PLAYING;
+        // Revive 상태 초기화 (부모 클래스)
+        initReviveState();
 
         initializeInventory(state, 0);
-
     }
-
-
 
     /**
      * Starts the action.
@@ -266,22 +220,12 @@ public class GameScreen extends Screen {
     protected final void update() {
         super.update();
 
+        /// ----------------------------------------
+        // Revive Phase Handler (공통 헬퍼 사용)
         // ----------------------------------------
-        // Revive Phase Handler
-        // ----------------------------------------
-        switch (this.revivePhase) {
-            case REVIVE_PROMPT:
-                handleRevivePrompt();  // UI 띄우기 + 입력받기
-                return; // 게임 업데이트 중단
-
-            case REVIVE_RESULT:
-                handleReviveFailed();  // 실패 메시지 UI
-                return;
-
-            case EXITING:
-                this.returnCode = 1;
-                this.isRunning = false;
-                return;
+        if (!handleRevivePhaseState(this.inputManager)) {
+            draw();     // 화면만 다시 그리고
+            return;     // 이 프레임 로직 종료
         }
 
 
@@ -294,10 +238,12 @@ public class GameScreen extends Screen {
             }
         }
 
-
-
         checkAchievement();
-        if (this.inputDelay.checkFinished() && inputManager.isKeyDown(KeyEvent.VK_ESCAPE) && this.pauseCooldown.checkFinished()) {
+
+        // pause 토글
+        if (this.inputDelay.checkFinished()
+                && inputManager.isKeyDown(KeyEvent.VK_ESCAPE)
+                && this.pauseCooldown.checkFinished()) {
             this.isPaused = !this.isPaused;
             this.pauseCooldown.reset();
 
@@ -309,7 +255,11 @@ public class GameScreen extends Screen {
                 SoundManager.startBackgroundMusic("sound/SpaceInvader-GameTheme.wav");
             }
         }
-        if (this.isPaused && inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE) && this.returnMenuCooldown.checkFinished()) {
+
+        // pause 중 메뉴로 복귀
+        if (this.isPaused
+                && inputManager.isKeyDown(KeyEvent.VK_BACK_SPACE)
+                && this.returnMenuCooldown.checkFinished()) {
             SoundManager.playOnce("sound/select.wav");
             SoundManager.stopAllMusic(); // Stop all music before returning to menu
             returnCode = 1;
@@ -320,44 +270,11 @@ public class GameScreen extends Screen {
             if (this.inputDelay.checkFinished() && !this.levelFinished) {
 
                 // Per-player input/move/shoot
+                // Per-player input/move/shoot
                 for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
-                    Ship ship = this.ships[p];
-
-                    if (ship == null || ship.isDestroyed())
-                        continue;
-
-                    boolean moveRight, moveLeft, fire;
-                    // Get player key input status
-                    if (p == 0) {
-                        moveRight = inputManager.isP1RightPressed();
-                        moveLeft = inputManager.isP1LeftPressed();
-                        fire = inputManager.isP1ShootPressed();
-                    } else {
-                        moveRight = inputManager.isP2RightPressed();
-                        moveLeft = inputManager.isP2LeftPressed();
-                        fire = inputManager.isP2ShootPressed();
-                    }
-
-                    boolean isRightBorder = ship.getPositionX() + ship.getWidth() + ship.getSpeed() > this.width - 1;
-
-                    boolean isLeftBorder = ship.getPositionX() - ship.getSpeed() < 1;
-
-                    if (moveRight && !isRightBorder)
-                        ship.moveRight();
-                    if (moveLeft && !isLeftBorder)
-                        ship.moveLeft();
-
-                    fire = (p == 0)
-                            ? inputManager.isKeyDown(KeyEvent.VK_SPACE)
-                            : inputManager.isKeyDown(KeyEvent.VK_ENTER);
-
-                        if (fire && ship.shoot(this.bullets)) {
-                            SoundManager.playOnce("sound/shoot.wav");
-
-                        state.incBulletsShot(p); // 2P mode: increments per-player bullet shots
-
-                    }
+                    handleSingleShipInput(p, this.ships, this.bullets, this.state);
                 }
+
 
                 // Special ship lifecycle
                 if (this.enemyShipSpecial != null) {
@@ -366,13 +283,15 @@ public class GameScreen extends Screen {
                     else if (this.enemyShipSpecialExplosionCooldown.checkFinished())
                         this.enemyShipSpecial = null;
                 }
-                if (this.enemyShipSpecial == null && this.enemyShipSpecialCooldown.checkFinished()) {
+                if (this.enemyShipSpecial == null
+                        && this.enemyShipSpecialCooldown.checkFinished()) {
                     this.enemyShipSpecial = new EnemyShip();
                     this.enemyShipSpecialCooldown.reset();
                     SoundManager.playLoop("sound/special_ship_sound.wav");
                     this.logger.info("A special ship appears");
                 }
-                if (this.enemyShipSpecial != null && this.enemyShipSpecial.getPositionX() > this.width) {
+                if (this.enemyShipSpecial != null
+                        && this.enemyShipSpecial.getPositionX() > this.width) {
                     this.enemyShipSpecial = null;
                     SoundManager.stop();
                     this.logger.info("The special ship has escaped");
@@ -392,8 +311,13 @@ public class GameScreen extends Screen {
                 }
             }
 
-
             manageCollisions();
+
+            // collision 에서 revivePhase 가 PROMPT 로 바뀌었으면 여기서 멈춤
+            if (this.revivePhase != RevivePhase.PLAYING) {
+                return;
+            }
+
             cleanBullets();
 
             // Item Entity Code
@@ -405,48 +329,60 @@ public class GameScreen extends Screen {
             // check active item affects
             state.updateEffects();
             drawManager.setLastLife(state.getLivesRemaining() == 1);
-		    draw();
+            draw();
 
-        if (!sessionHighScoreNotified && this.state.getScore() > this.topScore) {
-            sessionHighScoreNotified = true;
-            this.highScoreNotified = true;
-            this.highScoreNoticeStartTime = System.currentTimeMillis();
-        }
+            if (!sessionHighScoreNotified
+                    && this.state.getScore() > this.topScore) {
+                sessionHighScoreNotified = true;
+                this.highScoreNotified = true;
+                this.highScoreNoticeStartTime = System.currentTimeMillis();
+            }
 
             // End condition: formation cleared or TEAM lives exhausted.
-            if ((this.enemyShipFormation.isEmpty() || !state.teamAlive()) && !this.levelFinished) {
-                // The object managed by the object pool pattern must be recycled at the end of the level.
+            if ((this.enemyShipFormation.isEmpty() || !state.teamAlive())
+                    && !this.levelFinished) {
+                // The object managed by the object pool pattern
+                // must be recycled at the end of the level.
                 BulletPool.recycle(this.bullets);
                 this.bullets.removeAll(this.bullets);
                 ItemPool.recycle(items);
                 this.items.removeAll(this.items);
 
-			this.levelFinished = true;
-			this.screenFinishedCooldown.reset();
+                this.levelFinished = true;
+                this.screenFinishedCooldown.reset();
 
-			if(enemyShipFormation.getShipCount() == 0 && state.getBulletsShot() > 0 && state.getBulletsShot() == state.getShipsDestroyed()){
-				achievementManager.unlock("Perfect Shooter");
-			}
-			if(enemyShipFormation.getShipCount() == 0 && !this.tookDamageThisLevel){
-				achievementManager.unlock("Survivor");
-			}
-			if(enemyShipFormation.getShipCount() == 0 & state.getLevel() == 5){
-				achievementManager.unlock("Clear");
-			}
+                if (enemyShipFormation.getShipCount() == 0
+                        && state.getBulletsShot() > 0
+                        && state.getBulletsShot()
+                        == state.getShipsDestroyed()) {
+                    achievementManager.unlock("Perfect Shooter");
+                }
+                if (enemyShipFormation.getShipCount() == 0
+                        && !this.tookDamageThisLevel) {
+                    achievementManager.unlock("Survivor");
+                }
+                if (enemyShipFormation.getShipCount() == 0
+                        & state.getLevel() == 5) {
+                    achievementManager.unlock("Clear");
+                }
                 checkAchievement();
-		}
+            }
 
-		if (this.levelFinished && this.screenFinishedCooldown.checkFinished()) {
-			if (!achievementManager.hasPendingToasts()) {
-				this.isRunning = false;
-			}
-		}
+            if (this.levelFinished
+                    && this.screenFinishedCooldown.checkFinished()) {
+                if (!achievementManager.hasPendingToasts()) {
+                    this.isRunning = false;
+                }
+            }
+        }
 
-		if (this.achievementManager != null) this.achievementManager.update();
-	}
+        if (this.achievementManager != null)
+            this.achievementManager.update();
 
-
-        draw();
+        // pause 상태에서도 다시 그려줘야 함
+        if (this.isPaused) {
+            draw();
+        }
     }
 
     /**
@@ -478,62 +414,48 @@ public class GameScreen extends Screen {
             drawManager.drawEntity(item, item.getPositionX(),
                     item.getPositionY());
 
-		// Aggregate UI (team score & team lives)
-		drawManager.drawScore(this, state.getScore());
-    drawManager.drawLives(this, state.getLivesRemaining(),state.isCoop() );
-		drawManager.drawCoins(this,  state.getCoins()); // ADD THIS LINE - 2P mode: team total
-        // 2P mode: setting per-player coin count
-//        if (state.isCoop()) {
-//            // left: P1
-//            String p1 = String.format("P1  S:%d  K:%d  B:%d",
-//                    state.getScore(0), state.getShipsDestroyed(0),
-//                    state.getBulletsShot(0));
-//            // right: P2
-//            String p2 = String.format("P2  S:%d  K:%d  B:%d",
-//                    state.getScore(1), state.getShipsDestroyed(1),
-//                    state.getBulletsShot(1));
-//            drawManager.drawCenteredRegularString(this, p1, 40);
-//            drawManager.drawCenteredRegularString(this, p2, 60);
-//            // remove the unnecessary "P1 S: K: B: C:" and "P2 S: K: B: C:" lines from the game screen
-//        }
-        drawManager.drawLevel(this, this.state.getLevel());
-		drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
-        drawManager.drawShipCount(this, enemyShipFormation.getShipCount());
-        drawInventory(40, SEPARATION_LINE_HEIGHT-40);
+        // Aggregate UI (team score & team lives)
+        drawManager.drawScore(this, state.getScore());
+        drawManager.drawLives(this, state.getLivesRemaining(), state.isCoop());
+        drawManager.drawCoins(this, state.getCoins());
 
+        drawManager.drawLevel(this, this.state.getLevel());
+        drawManager.drawHorizontalLine(this, SEPARATION_LINE_HEIGHT - 1);
+        drawManager.drawShipCount(this, enemyShipFormation.getShipCount());
+        drawInventory(40, SEPARATION_LINE_HEIGHT - 40);
 
         if (!this.inputDelay.checkFinished()) {
-			int countdown = (int) ((INPUT_DELAY - (System.currentTimeMillis() - this.gameStartTime)) / 1000);
-			drawManager.drawCountDown(this, this.state.getLevel(), countdown, this.bonusLife);
-			drawManager.drawHorizontalLine(this, this.height / 2 - this.height / 12);
-			drawManager.drawHorizontalLine(this, this.height / 2 + this.height / 12);
-		}
+            int countdown = (int) ((INPUT_DELAY
+                    - (System.currentTimeMillis() - this.gameStartTime)) / 1000);
+            drawManager.drawCountDown(this, this.state.getLevel(),
+                    countdown, this.bonusLife);
+            drawManager.drawHorizontalLine(this,
+                    this.height / 2 - this.height / 12);
+            drawManager.drawHorizontalLine(this,
+                    this.height / 2 + this.height / 12);
+        }
+
         if (this.highScoreNotified &&
-                System.currentTimeMillis() - this.highScoreNoticeStartTime < HIGH_SCORE_NOTICE_DURATION) {
+                System.currentTimeMillis() - this.highScoreNoticeStartTime
+                        < HIGH_SCORE_NOTICE_DURATION) {
             drawManager.drawNewHighScoreNotice(this);
         }
 
-		// [ADD] draw achievement popups right before completing the frame
-		drawManager.drawAchievementToasts(
-				this,
-				(this.achievementManager != null)
-						? this.achievementManager.getActiveToasts()
-						: java.util.Collections.emptyList()
-		);
-		if(this.isPaused){
-			drawManager.drawPauseOverlay(this);
-		}
+        // draw achievement toasts
+        drawManager.drawAchievementToasts(
+                this,
+                (this.achievementManager != null)
+                        ? this.achievementManager.getActiveToasts()
+                        : java.util.Collections.emptyList()
+        );
 
-        // --- Revive UI ---
-        if (this.revivePhase == RevivePhase.REVIVE_PROMPT) {
-            drawManager.drawRevivePrompt(this, this.reviveSelection);
+        if (this.isPaused) {
+            drawManager.drawPauseOverlay(this);
         }
 
-        if (this.revivePhase == RevivePhase.REVIVE_RESULT) {
-            drawManager.drawReviveFail(this, this.reviveFailMessage);
-        }
+        // --- Revive UI (공통 헬퍼 사용) ---
+        drawReviveUiIfNeeded(drawManager);
         // -------------------
-
 
         drawManager.completeDrawing(this);
     }
@@ -542,30 +464,13 @@ public class GameScreen extends Screen {
      * Cleans bullets that go off screen.
      */
     private void cleanBullets() {
-        Set<Bullet> recyclable = new HashSet<Bullet>();
-        for (Bullet bullet : this.bullets) {
-            bullet.update();
-            if (bullet.getPositionY() < SEPARATION_LINE_HEIGHT
-                    || bullet.getPositionY() > this.height)
-                recyclable.add(bullet);
-        }
-        this.bullets.removeAll(recyclable);
-        BulletPool.recycle(recyclable);
+        cleanBulletsCommon(this.bullets, SEPARATION_LINE_HEIGHT);
     }
 
-    /**
-     * Cleans items that go off screen.
-     */
     private void cleanItems() {
-        Set<Item> recyclableItems = new HashSet<Item>();
-        for (Item item : this.items) {
-            item.update();
-            if (item.getPositionY() > this.height)
-                recyclableItems.add(item);
-        }
-        this.items.removeAll(recyclableItems);
-        ItemPool.recycle(recyclableItems);
+        cleanItemsCommon(this.items);
     }
+
 
     /**
      * Manages pickups between player and items.
@@ -579,37 +484,42 @@ public class GameScreen extends Screen {
      * → add score.
      */
     private void manageCollisions() {
-        Set<Bullet> recyclable = new HashSet<Bullet>();
+        Set<Bullet> recyclable = new HashSet<>();
         for (Bullet bullet : this.bullets) {
             if (bullet.getSpeed() > 0) {
                 // Enemy bullet vs both players
-
                 for (int p = 0; p < GameState.NUM_PLAYERS; p++) {
                     Ship ship = this.ships[p];
                     if (ship != null && !ship.isDestroyed()
-                            && checkCollision(bullet, ship) && !this.levelFinished) {
+                            && checkCollision(bullet, ship)
+                            && !this.levelFinished) {
                         recyclable.add(bullet);
 
-
-                        drawManager.triggerExplosion(ship.getPositionX(), ship.getPositionY(), false, state.getLivesRemaining() == 1);
+                        drawManager.triggerExplosion(
+                                ship.getPositionX(), ship.getPositionY(),
+                                false,
+                                state.getLivesRemaining() == 1);
                         ship.addHit();
 
-                        ship.destroy(); // explosion/respawn handled by Ship.update()
+                        ship.destroy();
                         SoundManager.playOnce("sound/explosion.wav");
-                        state.decLife(p); // decrement shared/team lives by 1
+                        state.decLife(p);
 
                         // Record damage for Survivor achievement check
                         this.tookDamageThisLevel = true;
 
-                        drawManager.setLastLife(state.getLivesRemaining() == 1);
-                        drawManager.setDeath(state.getLivesRemaining() == 0);
+                        drawManager.setLastLife(
+                                state.getLivesRemaining() == 1);
+                        drawManager.setDeath(
+                                state.getLivesRemaining() == 0);
 
-                        this.logger.info("Hit on player " + (p + 1) + ", team lives now: " + state.getLivesRemaining());
-						break;
+                        this.logger.info("Hit on player " + (p + 1)
+                                + ", team lives now: "
+                                + state.getLivesRemaining());
+                        break;
+                    }
+                }
 
-
-					}
-				}
                 // --- Revive Trigger ---
                 if (state.getLivesRemaining() == 0) {
                     this.revivePhase = RevivePhase.REVIVE_PROMPT;
@@ -617,38 +527,48 @@ public class GameScreen extends Screen {
                 }
                 // ------------------------------
 
-
-			} else {
-				// Player bullet vs enemies
-				// map Bullet owner id (1 or 2) to per-player index (0 or 1)
-				final int ownerId = bullet.getOwnerPlayerId(); // 1 or 2 (0 if unset)
-				final int pIdx = (ownerId == 2) ? 1 : 0; // default to P1 when unset
+            } else {
+                // Player bullet vs enemies
+                final int ownerId = bullet.getOwnerPlayerId(); // 1 or 2 (0 if unset)
+                final int pIdx = (ownerId == 2) ? 1 : 0; // default to P1 when unset
 
                 boolean finalShip = this.enemyShipFormation.lastShip();
 
                 // Check collision with formation enemies
                 for (EnemyShip enemyShip : this.enemyShipFormation) {
-                    if (!enemyShip.isDestroyed() && checkCollision(bullet, enemyShip)) {
+                    if (!enemyShip.isDestroyed()
+                            && checkCollision(bullet, enemyShip)) {
                         recyclable.add(bullet);
                         enemyShip.hit();
 
                         if (enemyShip.isDestroyed()) {
                             int points = enemyShip.getPointValue();
-                            state.addCoins(pIdx, enemyShip.getCoinValue()); // 2P mode: modified to per-player coins
+                            state.addCoins(pIdx,
+                                    enemyShip.getCoinValue());
 
-                            drawManager.triggerExplosion(enemyShip.getPositionX(), enemyShip.getPositionY(), true, finalShip);
-                            state.addScore(pIdx, points); // 2P mode: modified to add to P1 score for now
+                            drawManager.triggerExplosion(
+                                    enemyShip.getPositionX(),
+                                    enemyShip.getPositionY(),
+                                    true, finalShip);
+                            state.addScore(pIdx, points);
                             state.incShipsDestroyed(pIdx);
 
-                            // obtain drop from ItemManager (may return null)
-                            Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
+                            Item drop =
+                                    engine.ItemManager.getInstance()
+                                            .obtainDrop(enemyShip);
                             if (drop != null) {
                                 this.items.add(drop);
-                                this.logger.info("Spawned " + drop.getType() + " at " + drop.getPositionX() + "," + drop.getPositionY());
+                                this.logger.info(
+                                        "Spawned " + drop.getType()
+                                                + " at "
+                                                + drop.getPositionX()
+                                                + ","
+                                                + drop.getPositionY());
                             }
 
                             this.enemyShipFormation.destroy(enemyShip);
-                            SoundManager.playOnce("sound/invaderkilled.wav");
+                            SoundManager.playOnce(
+                                    "sound/invaderkilled.wav");
                             this.logger.info("Hit on enemy ship.");
 
                             checkAchievement();
@@ -659,18 +579,22 @@ public class GameScreen extends Screen {
 
                 if (this.enemyShipSpecial != null
                         && !this.enemyShipSpecial.isDestroyed()
-                        && checkCollision(bullet, this.enemyShipSpecial)) {
+                        && checkCollision(bullet,
+                        this.enemyShipSpecial)) {
                     int points = this.enemyShipSpecial.getPointValue();
 
-                    state.addCoins(pIdx, this.enemyShipSpecial.getCoinValue()); // 2P mode: modified to per-player coins
-
+                    state.addCoins(pIdx,
+                            this.enemyShipSpecial.getCoinValue());
                     state.addScore(pIdx, points);
-                    state.incShipsDestroyed(pIdx); // 2P mode: modified incrementing ships destroyed
+                    state.incShipsDestroyed(pIdx);
 
-					this.enemyShipSpecial.destroy();
+                    this.enemyShipSpecial.destroy();
                     SoundManager.stop();
                     SoundManager.playOnce("sound/explosion.wav");
-                    drawManager.triggerExplosion(this.enemyShipSpecial.getPositionX(), this.enemyShipSpecial.getPositionY(), true, true);
+                    drawManager.triggerExplosion(
+                            this.enemyShipSpecial.getPositionX(),
+                            this.enemyShipSpecial.getPositionY(),
+                            true, true);
                     this.enemyShipSpecialExplosionCooldown.reset();
                     recyclable.add(bullet);
                 }
@@ -679,8 +603,6 @@ public class GameScreen extends Screen {
         this.bullets.removeAll(recyclable);
         BulletPool.recycle(recyclable);
     }
-
-
 
     /**
      * Returns a GameState object representing the status of the game.
@@ -694,151 +616,61 @@ public class GameScreen extends Screen {
     /**
      * check Achievement released;
      */
-    public void checkAchievement(){
-        // First Blood
-        if(state.getShipsDestroyed() == 1) {
-            achievementManager.unlock("First Blood");
-        }
+    public void checkAchievement() {
+        AchievementUtil.checkBasicAchievements(state, achievementManager);
         // Clear
-        if (levelFinished && this.enemyShipFormation.isEmpty() && state.getLevel()==5) {
+        if (levelFinished && this.enemyShipFormation.isEmpty()
+                && state.getLevel() == 5) {
             achievementManager.unlock("Clear");
-            float p1Acc = state.getBulletsShot(0) > 0 ? (float) state.getShipsDestroyed(0) / state.getBulletsShot(0)*100 : 0f;
-            float p2Acc = state.getBulletsShot(1) > 0 ? (float) state.getShipsDestroyed(1) / state.getBulletsShot(1)*100 : 0f;
+            float p1Acc =
+                    state.getBulletsShot(0) > 0
+                            ? (float) state.getShipsDestroyed(0)
+                            / state.getBulletsShot(0) * 100
+                            : 0f;
+            float p2Acc =
+                    state.getBulletsShot(1) > 0
+                            ? (float) state.getShipsDestroyed(1)
+                            / state.getBulletsShot(1) * 100
+                            : 0f;
             // Survivor
-            if(!this.tookDamageThisLevel){
+            if (!this.tookDamageThisLevel) {
                 achievementManager.unlock("Survivor");
             }
-            //Sharpshooter
-            if(p1Acc>=80){
+            // Sharpshooter
+            if (p1Acc >= 80) {
                 //1p
                 achievementManager.unlock("Sharpshooter");
                 //coop
-                if(p2Acc>=80){
+                if (p2Acc >= 80) {
                     achievementManager.unlock("Sharpshooter");
                 }
             }
         }
-
-        //50 Bullets
-        if(state.getBulletsShot() >= 50){
-            achievementManager.unlock("50 Bullets");
-        }
-        //Get 3000 Score
-        if(state.getScore()>=3000){
-            achievementManager.unlock("Get 3000 Score");
-        }
     }
 
-    // ----------------------------
-    // Revive Prompt Input Handler
-    // ----------------------------
-    private void handleRevivePromptInput() {
+    // ------------------------------------------------------------------
+    // ReviveScreen 콜백 구현부
+    // ------------------------------------------------------------------
 
-        if (state.isSharedLives()) {
-            int now = state.getTeamLives();
-            int give = 6 - now;
-            if (give > 0) state.addTeamLife(give);
-        } else {
-            int now = state.get1PlayerLives();
-            int give = 3 - now;
-            if (give > 0) state.addLife(0, give);
-        }
-
-        if (inputManager.isKeyDown(KeyEvent.VK_UP)) {
-            reviveSelection = 0; // YES
-        }
-        if (inputManager.isKeyDown(KeyEvent.VK_DOWN)) {
-            reviveSelection = 1; // NO
-        }
-
-        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) || inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-            if (reviveSelection == 0) { // YES
-                boolean ok = reviveManager.tryRevive();
-                if (ok) {
-                    respawnPlayer();
-                    this.revivePhase = RevivePhase.PLAYING;
-                } else {
-                    if (!reviveManager.canRevive(state.getLevel())) {
-                        reviveFailMessage = "It's already revived at this level";
-                    } else if (state.getCoins() < 50) {
-                        reviveFailMessage = "You don't have enough coins";
-                    } else {
-                        reviveFailMessage = "You can't revive";
-                    }
-                    this.revivePhase = RevivePhase.REVIVE_RESULT;
-
-                    InputManager.resetKeys();
-                }
-            } else { // NO
-                this.returnCode = 1; // 레벨 선택 화면
-                this.isRunning = false;
-            }
-        }
-    }
-
-
-    // ----------------------------
-    // Revive Result Input Handler
-    // ----------------------------
-    private void handleReviveResultInput() {
-        if (inputManager.isKeyDown(KeyEvent.VK_ENTER) ||
-                inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-
-
-
-
-            this.returnCode = 1;
-            this.isRunning = false;
-        }
-    }
-
-    // ----------------------------
-    // Respawn Player (부활 위치)
-    // ----------------------------
-    private void respawnPlayer() {
-
-
-        for (Ship s : this.ships) {
-            if (s != null) {
-            }
-        }
-
-
-
-
+    @Override
+    protected void onReviveSuccess() {
+        // 원래 respawnPlayer() 내용
         this.levelFinished = false;
         this.screenFinishedCooldown.reset();
-
-
         this.revivePhase = RevivePhase.PLAYING;
     }
 
-
-
-    // --------------------------------------------
-    // RevivePrompt UI.phase handler
-    // --------------------------------------------
-    private void handleRevivePrompt() {
-        handleRevivePromptInput();
-        draw();
+    @Override
+    protected void onReviveRejected() {
+        // 거절 시 점수 화면(2)으로 이동
+        this.returnCode = 2;
+        this.isRunning = false;
     }
 
-    // --------------------------------------------
-    // Revive Failure
-    // --------------------------------------------
-    private void handleReviveFailed() {
-        handleReviveResultInput();
-        draw();
+    @Override
+    protected void onReviveResultAcknowledged() {
+        // 실패 메시지 확인 후에도 점수 화면(2)으로 이동
+        this.returnCode = 2;
+        this.isRunning = false;
     }
-
-    // --------------------------------------------
-    // Revive Success
-    // --------------------------------------------
-    private void handleReviveSuccess() {
-        this.revivePhase = RevivePhase.PLAYING;
-    }
-
-
-
-
 }
