@@ -362,7 +362,7 @@ public class GameScreen extends ReviveScreen {
                     achievementManager.unlock("Survivor");
                 }
                 if (enemyShipFormation.getShipCount() == 0
-                        & state.getLevel() == 5) {
+                        && state.getLevel() == 5) {
                     achievementManager.unlock("Clear");
                 }
                 checkAchievement();

@@ -725,38 +725,47 @@ public class BossScreen extends ReviveScreen {
      * 플레이어 총알이 쫄몹에게 맞았는지 확인합니다.
      */
     private boolean handleMinionCollision(Bullet bullet, int pIdx) {
-        if (this.minionFormation != null) {
-            for (EnemyShip enemyShip : this.minionFormation) {
-                if (!enemyShip.isDestroyed()
-                        && checkCollision(bullet, enemyShip)) {
-                    enemyShip.hit();
+        if (this.minionFormation == null) {
+            return false;
+        }
 
-                    if (enemyShip.isDestroyed()) {
-                        int points = enemyShip.getPointValue();
-                        state.addCoins(pIdx, enemyShip.getCoinValue());
-                        drawManager.triggerExplosion(
-                                enemyShip.getPositionX(),
-                                enemyShip.getPositionY(),
-                                true, false);
-                        state.addScore(pIdx, points);
-                        state.incShipsDestroyed(pIdx);
+        for (EnemyShip enemyShip : this.minionFormation) {
+            if (!enemyShip.isDestroyed() && checkCollision(bullet, enemyShip)) {
 
-                        Item drop =
-                                engine.ItemManager.getInstance()
-                                        .obtainDrop(enemyShip);
-                        if (drop != null) {
-                            this.items.add(drop);
-                        }
+                enemyShip.hit();
 
-                        this.minionFormation.destroy(enemyShip);
-                        SoundManager.playOnce("sound/invaderkilled.wav");
-                    }
-                    return true;
+                if (enemyShip.isDestroyed()) {
+                    handleMinionKilled(enemyShip, pIdx);
                 }
+
+                return true;
             }
         }
         return false;
     }
+
+    private void handleMinionKilled(EnemyShip enemyShip, int pIdx) {
+        int points = enemyShip.getPointValue();
+        state.addCoins(pIdx, enemyShip.getCoinValue());
+
+        drawManager.triggerExplosion(
+                enemyShip.getPositionX(),
+                enemyShip.getPositionY(),
+                true, false);
+
+        state.addScore(pIdx, points);
+        state.incShipsDestroyed(pIdx);
+
+        Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
+        if (drop != null) {
+            this.items.add(drop);
+        }
+
+        this.minionFormation.destroy(enemyShip);
+        SoundManager.playOnce("sound/invaderkilled.wav");
+    }
+
+
 
     /**
      * 플레이어 총알이 보스에게 맞았는지 확인합니다.
