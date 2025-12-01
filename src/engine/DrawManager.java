@@ -750,7 +750,7 @@ public final class DrawManager {
                 "Some monsters have to\nbe attacked many times",
                 "Hurry up!\nThey're getting closer",
                 "These monsters\nseem unwilling to attack",
-                "All but you were defeated\nNow you are the last force of the Earth",
+                "All but you were defeated..\nNow you are the last force\nof the Earth",
                 "The boss is smiling at you\n\nLet's defeat boss!"
         };
 
