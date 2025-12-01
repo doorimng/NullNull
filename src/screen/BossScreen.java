@@ -830,7 +830,6 @@ public class BossScreen extends ReviveScreen {
     protected void onReviveSuccess() {
         BulletPool.recycle(this.bullets);
         this.bullets.clear();
-
         this.levelFinished = false;
         this.screenFinishedCooldown.reset();
         this.revivePhase = RevivePhase.PLAYING;
