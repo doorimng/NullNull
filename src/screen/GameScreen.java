@@ -654,6 +654,10 @@ public class GameScreen extends ReviveScreen {
 
     @Override
     protected void onReviveSuccess() {
+
+        BulletPool.recycle(this.bullets);
+        this.bullets.clear();
+
         // 원래 respawnPlayer() 내용
         this.levelFinished = false;
         this.screenFinishedCooldown.reset();
