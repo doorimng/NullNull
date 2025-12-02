@@ -542,36 +542,13 @@ public class GameScreen extends ReviveScreen {
                         enemyShip.hit();
 
                         if (enemyShip.isDestroyed()) {
-                            int points = enemyShip.getPointValue();
-                            state.addCoins(pIdx,
-                                    enemyShip.getCoinValue());
-
-                            drawManager.triggerExplosion(
-                                    enemyShip.getPositionX(),
-                                    enemyShip.getPositionY(),
-                                    true, finalShip);
-                            state.addScore(pIdx, points);
-                            state.incShipsDestroyed(pIdx);
-
-                            Item drop =
-                                    engine.ItemManager.getInstance()
-                                            .obtainDrop(enemyShip);
-                            if (drop != null) {
-                                this.items.add(drop);
-                                this.logger.info(
-                                        "Spawned " + drop.getType()
-                                                + " at "
-                                                + drop.getPositionX()
-                                                + ","
-                                                + drop.getPositionY());
-                            }
-
-                            this.enemyShipFormation.destroy(enemyShip);
-                            SoundManager.playOnce(
-                                    "sound/invaderkilled.wav");
-                            this.logger.info("Hit on enemy ship.");
-
-                            checkAchievement();
+                            handleEnemyKilled(
+                                    enemyShip,
+                                    pIdx,
+                                    this.state,
+                                    this.drawManager,
+                                    this.items,
+                                    this.enemyShipFormation);
                         }
                         break;
                     }
@@ -662,17 +639,5 @@ public class GameScreen extends ReviveScreen {
         this.revivePhase = RevivePhase.PLAYING;
     }
 
-    @Override
-    protected void onReviveRejected() {
-        // 거절 시 점수 화면(2)으로 이동
-        this.returnCode = 2;
-        this.isRunning = false;
-    }
 
-    @Override
-    protected void onReviveResultAcknowledged() {
-        // 실패 메시지 확인 후에도 점수 화면(2)으로 이동
-        this.returnCode = 2;
-        this.isRunning = false;
-    }
 }

@@ -226,6 +226,45 @@ public abstract class ReviveScreen extends Screen {
         ItemPool.recycle(recyclableItems);
     }
 
+    /**
+     * 공통: EnemyShip이 파괴되었을 때 점수/코인/드랍/사운드/파괴 처리를 수행한다.
+     */
+    protected void handleEnemyKilled(
+            EnemyShip enemyShip,
+            int playerIndex,
+            GameState state,
+            DrawManager drawManager,
+            Set<Item> items,
+            EnemyShipFormation formation) {
+
+        // 점수 및 코인
+        int points = enemyShip.getPointValue();
+        state.addCoins(playerIndex, enemyShip.getCoinValue());
+        state.addScore(playerIndex, points);
+        state.incShipsDestroyed(playerIndex);
+
+        // 폭발 이펙트
+        drawManager.triggerExplosion(
+                enemyShip.getPositionX(),
+                enemyShip.getPositionY(),
+                true,
+                false
+        );
+
+        // 아이템 드랍
+        Item drop = ItemManager.getInstance().obtainDrop(enemyShip);
+        if (drop != null) {
+            items.add(drop);
+        }
+
+        // 쫄몹 제거 및 사운드
+        if (formation != null) {
+            formation.destroy(enemyShip);
+        }
+        SoundManager.playOnce("sound/invaderkilled.wav");
+    }
+
+
 
 
     // ----------------------------------------------------------------------
@@ -242,10 +281,26 @@ public abstract class ReviveScreen extends Screen {
      * Revive 창에서 "NO" 를 선택했을 때 호출된다.
      * - 점수 화면으로 이동 등 각 화면에 맞는 종료 처리를 하면 된다.
      */
-    protected abstract void onReviveRejected();
+
 
     /**
      * Revive 실패 메시지를 확인(ENTER/SPACE) 했을 때 호출된다.
      */
-    protected abstract void onReviveResultAcknowledged();
+
+    protected void handleReviveFailureCommon() {
+        this.returnCode = 2;
+        this.isRunning = false;
+    }
+    protected void onReviveRejected() {
+        handleReviveFailureCommon();
+    }
+
+    protected void onReviveResultAcknowledged() {
+        handleReviveFailureCommon();
+    }
+
+
+
+
+
 }

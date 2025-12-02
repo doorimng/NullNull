@@ -735,7 +735,14 @@ public class BossScreen extends ReviveScreen {
                 enemyShip.hit();
 
                 if (enemyShip.isDestroyed()) {
-                    handleMinionKilled(enemyShip, pIdx);
+                    handleEnemyKilled(
+                            enemyShip,
+                            pIdx,
+                            this.state,
+                            this.drawManager,
+                            this.items,
+                            this.minionFormation
+                    );
                 }
 
                 return true;
@@ -844,15 +851,5 @@ public class BossScreen extends ReviveScreen {
         this.revivePhase = RevivePhase.PLAYING;
     }
 
-    @Override
-    protected void onReviveRejected() {
-        this.returnCode = 2;
-        this.isRunning = false;
-    }
 
-    @Override
-    protected void onReviveResultAcknowledged() {
-        this.returnCode = 2;
-        this.isRunning = false;
-    }
 }
