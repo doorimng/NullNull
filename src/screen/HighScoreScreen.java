@@ -4,7 +4,6 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 
 import engine.Core;
 import engine.Score;

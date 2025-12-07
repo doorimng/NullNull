@@ -222,6 +222,11 @@ public final class Core {
                     // If clicked back button, go back to the screen 1P screen -> Player select screen
                     if (returnCode == 5) { break; }
 
+                    gameState = null;
+                    currentLevel = 1;
+                    returnCode = 2;
+                    break;
+
                 case 7:
                     gameState = null;
                     currentLevel = 1;
