@@ -280,9 +280,9 @@ public class ScoreScreen extends Screen {
 
         if (this.gameState != null && this.gameState.isCoop()) {
             // [2P 모드]
-            drawManager.drawResults(this, this.gameState.getScore(), this.gameState.getCoins(),
+            drawManager.drawResults(this, this.gameState.getCoins(),
                     this.gameState.getLivesRemaining(), this.gameState.getShipsDestroyed(),
-                    0f, this.isNewRecord, false, isFailure);
+                    0f, false, isFailure);
 
             float p1Acc = this.gameState.getBulletsShot(0) > 0 ? (float) this.gameState.getShipsDestroyed(0) / this.gameState.getBulletsShot(0) : 0f;
             float p2Acc = this.gameState.getBulletsShot(1) > 0 ? (float) this.gameState.getShipsDestroyed(1) / this.gameState.getBulletsShot(1) : 0f;
@@ -296,8 +296,8 @@ public class ScoreScreen extends Screen {
         } else {
             // [1P 모드]
             float acc = (this.bulletsShot > 0) ? (float) this.shipsDestroyed / this.bulletsShot : 0f;
-            drawManager.drawResults(this, this.score, this.coins, this.livesRemaining,
-                    this.shipsDestroyed, acc, this.isNewRecord, true, isFailure);
+            drawManager.drawResults(this, this.coins, this.livesRemaining,
+                    this.shipsDestroyed, acc, true, isFailure);
         }
 
         // 4. [이름 입력창] - 성공했을 때만 표시

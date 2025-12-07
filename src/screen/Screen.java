@@ -162,7 +162,7 @@ public class Screen {
      */
     protected void drawInventory(int positionX, int positionY) {
         if (inventory != null) {
-            drawManager.drawItemInventory(this, inventory, positionX, positionY);
+            drawManager.drawItemInventory(inventory, positionX, positionY);
         }
     }
 

@@ -586,7 +586,7 @@ public class BossScreen extends ReviveScreen {
                 SEPARATION_LINE_HEIGHT - 1);
         if (this.inventory != null && this.inputDelay.checkFinished()) {
             drawManager.drawItemInventory(
-                    this, this.inventory,
+                    this.inventory,
                     40, SEPARATION_LINE_HEIGHT - 40);
         }
 

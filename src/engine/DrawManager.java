@@ -849,17 +849,15 @@ public final class DrawManager {
      * Draws the score (results).
      *
      * @param screen Screen to draw on.
-     * @param score Score obtained.
      * @param coins Coins obtained.
      * @param livesRemaining Lives remaining.
      * @param shipsDestroyed Ships destroyed.
      * @param accuracy Accuracy.
-     * @param isNewRecord If the score is a new high score.
      * @param isFailure True if the player failed (Game Over), False if cleared.
      */
-    public void drawResults(final Screen screen, final int score,
+    public void drawResults(final Screen screen,
                             final int coins, final int livesRemaining, final int shipsDestroyed,
-                            final float accuracy, final boolean isNewRecord, final boolean accuracy1P, final boolean isFailure) { // 파라미터 isFailure 추가됨
+                            final float accuracy, final boolean accuracy1P, final boolean isFailure) { // 파라미터 isFailure 추가됨
         String coinString = String.format("coins %04d", coins);
         String livesRemainingString = String.format("lives remaining %d", livesRemaining);
         String shipsDestroyedString = "enemies destroyed " + shipsDestroyed;
@@ -1627,7 +1625,7 @@ public final class DrawManager {
      * @param positionY
      * Y position for inventory display.
      */
-    public void drawItemInventory(final Screen screen, final ItemInventory inventory,
+    public void drawItemInventory(final ItemInventory inventory,
                                   final int positionX, final int positionY) {
         if (inventory == null) return;
 
