@@ -36,7 +36,6 @@ public class BossScreen extends ReviveScreen {
     /** 사운드 경로 상수 (중복 리터럴 제거) */
     private static final String SOUND_BGM       = "sound/SpaceInvader-GameTheme.wav";
     private static final String SOUND_EXPLOSION = "sound/explosion.wav";
-    private static final String SOUND_SHOOT     = "sound/shoot.wav";
     private static final String SOUND_SELECT    = "sound/select.wav";
     private static final String SOUND_COUNTDOWN = "sound/CountDownSound.wav";
 
@@ -750,29 +749,6 @@ public class BossScreen extends ReviveScreen {
         }
         return false;
     }
-
-    private void handleMinionKilled(EnemyShip enemyShip, int pIdx) {
-        int points = enemyShip.getPointValue();
-        state.addCoins(pIdx, enemyShip.getCoinValue());
-
-        drawManager.triggerExplosion(
-                enemyShip.getPositionX(),
-                enemyShip.getPositionY(),
-                true, false);
-
-        state.addScore(pIdx, points);
-        state.incShipsDestroyed(pIdx);
-
-        Item drop = engine.ItemManager.getInstance().obtainDrop(enemyShip);
-        if (drop != null) {
-            this.items.add(drop);
-        }
-
-        this.minionFormation.destroy(enemyShip);
-        SoundManager.playOnce("sound/invaderkilled.wav");
-    }
-
-
 
     /**
      * 플레이어 총알이 보스에게 맞았는지 확인합니다.
