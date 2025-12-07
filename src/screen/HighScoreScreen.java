@@ -20,7 +20,6 @@ public class HighScoreScreen extends Screen {
 
     /** List of past high scores. */
     private List<Score> highScores1P;
-    private List<Score> highScores2P;
 
     /**
      * Constructor, establishes the properties of the screen.
@@ -40,7 +39,6 @@ public class HighScoreScreen extends Screen {
 
         // [Refactoring] Use helper method to load scores for both modes
         this.highScores1P = loadAndSortScores("1P");
-        this.highScores2P = loadAndSortScores("2P");
     }
 
     /**
@@ -111,11 +109,9 @@ public class HighScoreScreen extends Screen {
         drawManager.drawHighScoreMenu(this);
 
         // [Refactoring] Draw both columns using the generalized method
-        // 1P Scores (Left side)
-        drawManager.drawScoreColumn(this, highScores1P, width / 4, "1P");
+        // 1P Scores
+        drawManager.drawScoreColumn(this, highScores1P, width / 2, "");
 
-        // 2P Scores (Right side)
-        drawManager.drawScoreColumn(this, highScores2P, width / 4 * 3, "2P");
 
         // hover highlight
         int mx = inputManager.getMouseX();

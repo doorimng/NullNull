@@ -91,16 +91,6 @@ public final class Core {
                     LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " title screen at " + FPS + " fps.");
                     returnCode = frame.setScreen(currentScreen);
                     LOGGER.info("Closing title screen.");
-
-                    // 2P mode: reading the mode which user chose from TitleScreen
-                    // (edit) TitleScreen to PlayScreen
-                    if (returnCode == 2) {
-                        currentScreen = new PlayScreen(width, height, FPS);
-                        returnCode = frame.setScreen(currentScreen);
-
-                        coopSelected = ((PlayScreen) currentScreen).isCoopSelected();
-                    }
-
                     break;
 
                 case 2:
@@ -160,7 +150,6 @@ public final class Core {
                             break;
                         }
 
-                        // === 이 부분이 빠져있었습니다! ===
                         LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " game screen at " + FPS + " fps.");
                         returnCode = frame.setScreen(currentScreen); // 1. 스크린을 실제로 실행
                         LOGGER.info("Closing game screen.");
@@ -222,19 +211,8 @@ public final class Core {
                     break;
 
                 case 5:
-                    // Play : Use the play to decide 1p and 2p
-                    currentScreen = new PlayScreen(width, height, FPS);
-                    LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " play screen at " + FPS + " fps.");
-                    returnCode = frame.setScreen(currentScreen);
-                    coopSelected = ((PlayScreen) currentScreen).isCoopSelected();
-
-                    // playscreen -> shipselectionscreen
-                    if (returnCode == 2) {
-                        returnCode = 6;
-                    }
-                    LOGGER.info("Closing play screen.");
+                    returnCode = 6;
                     break;
-
                 case 6:
                     // Ship selection for Player 1.
                     currentScreen = new ShipSelectionScreen(width, height, FPS, 1);
@@ -244,24 +222,7 @@ public final class Core {
                     // If clicked back button, go back to the screen 1P screen -> Player select screen
                     if (returnCode == 5) { break; }
 
-                    if (coopSelected) {
-                        returnCode = 7; // Go to Player 2 selection.
-                    } else {
-                        gameState = null;
-                        currentLevel = 1;
-                        returnCode = 2;
-                    }
-                    break;
-
                 case 7:
-                    // Ship selection for Player 2.
-                    currentScreen = new ShipSelectionScreen(width, height, FPS, 2);
-                    returnCode = frame.setScreen(currentScreen);
-
-                    // If clicked back button, go back to the screen 2P screen -> 1P screen
-                    if (returnCode == 6) { break; }
-
-                    shipTypeP2 = ((ShipSelectionScreen) currentScreen).getSelectedShipType();
                     gameState = null;
                     currentLevel = 1;
                     returnCode = 2;

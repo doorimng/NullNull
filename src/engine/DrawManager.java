@@ -1043,7 +1043,6 @@ public final class DrawManager {
                                     Achievement achievement, List<String> completer) {
         String achievementsTitle = "Achievements";
         String instructionsString = "Press ESC to return";
-        String playerModeString = "              1P                                      2P              ";
         String prevNextString = "PREV                                                              NEXT";
         String achievementName = achievement.getName();
         String descriptionString = achievement.getDescription();
@@ -1054,8 +1053,6 @@ public final class DrawManager {
         drawCenteredRegularString(screen, achievementName, screen.getHeight() / 7);
         backBufferGraphics.setColor(Color.GRAY);
         drawCenteredRegularString(screen, descriptionString, screen.getHeight() / 5);
-        backBufferGraphics.setColor(Color.GREEN);
-        drawCenteredRegularString(screen, playerModeString, (int) (screen.getHeight() / 4));
         backBufferGraphics.setColor(Color.GRAY);
         drawCenteredRegularString(screen, instructionsString, (int) (screen.getHeight() * 0.9));
 
@@ -1064,11 +1061,9 @@ public final class DrawManager {
         int lineHeight = 25;
 
         // X positions for the 1P and 2P columns
-        int leftX = screen.getWidth() / 4;      // 1P column
-        int rightX = screen.getWidth() * 2 / 3; // 2P column
+        int leftX = screen.getWidth() / 3;      // 1P column
 
         List<String> team1 = new ArrayList<>();
-        List<String> team2 = new ArrayList<>();
 
         // Separate completers into 1P and 2P teams based on the mode prefix
         if (completer != null && !completer.isEmpty()) {
@@ -1081,24 +1076,14 @@ public final class DrawManager {
                     String name = parts[1].trim();
                     if (mode == 1) {
                         team1.add(name);
-                    } else if (mode == 2) {
-                        team2.add(name);
                     }
                 }
             }
 
-            // Draw names in each column, up to the max number of lines
-            int maxLines = Math.max(team1.size(), team2.size());
-            for (int i = 0; i < maxLines; i++) {
+            for (int i = 0; i < team1.size(); i++) {
                 int y = startY + i * lineHeight;
-                if (i < team1.size()) {
                     backBufferGraphics.setColor(Color.WHITE);
-                    backBufferGraphics.drawString(team1.get(i), leftX, y);
-                }
-                if (i < team2.size()) {
-                    backBufferGraphics.setColor(Color.WHITE);
-                    backBufferGraphics.drawString(team2.get(i), rightX, y);
-                }
+                    drawCenteredRegularString(screen, team1.get(i), y);
             }
 
         } else {
