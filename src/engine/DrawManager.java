@@ -984,9 +984,6 @@ public final class DrawManager {
         String highScoreString = "High Scores";
         String instructionsString = "Press ESC to return";
 
-        int midX = screen.getWidth() / 2;
-        int startY = screen.getHeight() / 3;
-
         backBufferGraphics.setColor(Color.GREEN);
         drawCenteredBigString(screen, highScoreString, screen.getHeight() / 8);
 
@@ -996,38 +993,6 @@ public final class DrawManager {
 
         // draw back button at top-left
         drawBackButton(screen, false);
-    }
-
-    /**
-     * Draws high scores.
-     *
-     * @param screen
-     * Screen to draw on.
-     * @param highScores
-     * List of high scores.
-     */
-    public void drawHighScores(final Screen screen, final List<Score> highScores, final String mode) { // add mode to parameter
-        backBufferGraphics.setColor(Color.WHITE);
-        int i = 0;
-        String scoreString = "";
-
-        int startY = screen.getHeight() / 3 + fontBigMetrics.getHeight() + 20;
-        int lineHeight = fontRegularMetrics.getHeight() + 5;
-
-        for (Score score : highScores) {
-            // [수정] 시간을 분:초 형식으로 변환
-            int totalSeconds = score.getScore() / 1000;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-
-            // 이름과 시간을 포맷팅 (예: AAA        01:23)
-            scoreString = String.format("%s        %02d:%02d", score.getName(), minutes, seconds);
-
-            int x = screen.getWidth() / 2 - fontRegularMetrics.stringWidth(scoreString) / 2;
-
-            backBufferGraphics.drawString(scoreString, x, startY + lineHeight * i);
-            i++;
-        }
     }
 
     /**
@@ -1059,9 +1024,6 @@ public final class DrawManager {
         // Starting Y position for player names
         int startY = (int) (screen.getHeight() * 0.3);
         int lineHeight = 25;
-
-        // X positions for the 1P and 2P columns
-        int leftX = screen.getWidth() / 3;      // 1P column
 
         List<String> team1 = new ArrayList<>();
 
