@@ -40,7 +40,7 @@ public final class Core {
     private static ConsoleHandler consoleHandler;
     private static int NUM_LEVELS; // Total number of levels
     private static int currentLevel = 1;
-    private static int startLevel = 6;
+    private static int startLevel = 1;
 
     /**
      * Test implementation.
@@ -111,70 +111,61 @@ public final class Core {
                         currentLevel = gameState.getLevel();
 
                         // 레벨 시작 전마다 MapScreen을 띄웁니다.
-                        currentScreen = new MapScreen(width, height, FPS, currentLevel) ;
-                        returnCode = frame.setScreen(currentScreen) ;
+                        currentScreen = new MapScreen(width, height, FPS, currentLevel);
+                        returnCode = frame.setScreen(currentScreen);
 
-                        // esc 버튼을 누르면 TitleScreen으로 이동합니다.
+                        // MapScreen에서 나가지 않았을 경우에만 진행
                         if (returnCode == 1) {
-                            returnCode = 9 ;
-                            break;
-                        }
-
-                        // 레벨 시작 전마다 StoryScreen을 띄웁니다.
-                        currentScreen = new StoryScreen(width, height, FPS, currentLevel) ;
-                        returnCode = frame.setScreen(currentScreen) ;
-
-                        // esc 버튼을 누르면 TitleScreen으로 이동합니다.
-                        if (returnCode == 1) {
-                            returnCode = 9 ;
-                            break;
-                        }
-
-                        if (currentLevel == gameSettings.size() + 1) { // 보스 레벨
-                            currentScreen = new BossScreen(
-                                    gameState, width, height, FPS,
-                                    shipTypeP1, shipTypeP2, achievementManager); // BossScreen 생성
-
-                            LOGGER.info("Starting Boss Screen.");
-
-                        } else if (currentLevel <= gameSettings.size()) { // 일반 레벨 : MapScreen -> GameScreen
-                            currentScreen = new GameScreen(
-                                    gameState,
-                                    gameSettings.get(currentLevel - 1),
-                                    bonusLife, width, height, FPS, shipTypeP1, shipTypeP2, achievementManager);
-
-                            LOGGER.log(Level.INFO, "Starting Game Screen Level {0}", currentLevel);
-
+                            returnCode = 9;
                         } else {
-                            // 모든 레벨과 보스를 클리어함
-                            break;
+                            // 레벨 시작 전마다 StoryScreen을 띄웁니다.
+                            currentScreen = new StoryScreen(width, height, FPS, currentLevel);
+                            returnCode = frame.setScreen(currentScreen);
+
+                            if (returnCode == 1) {
+                                returnCode = 9;
+                            } else {
+                                // 모든 레벨을 클리어하지 않은 경우 게임/보스 화면 진입
+                                if (currentLevel <= gameSettings.size() + 1) {
+                                    if (currentLevel == gameSettings.size() + 1) { // 보스 레벨
+                                        currentScreen = new BossScreen(
+                                                gameState, width, height, FPS,
+                                                shipTypeP1, shipTypeP2, achievementManager);
+                                        LOGGER.info("Starting Boss Screen.");
+                                    } else { // 일반 레벨
+                                        currentScreen = new GameScreen(
+                                                gameState,
+                                                gameSettings.get(currentLevel - 1),
+                                                bonusLife, width, height, FPS, shipTypeP1, shipTypeP2, achievementManager);
+                                        LOGGER.log(Level.INFO, "Starting Game Screen Level {0}", currentLevel);
+                                    }
+
+                                    LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " game screen at " + FPS + " fps.");
+                                    returnCode = frame.setScreen(currentScreen); // 1. 스크린을 실제로 실행
+                                    LOGGER.info("Closing game screen.");
+
+                                    // 2. 게임 도중 메뉴로 나갔을 경우 (Pause -> Backspace)
+                                    if (returnCode == 1) {
+                                        returnCode = 10;
+                                    } else {
+                                        // 3. 실행된 스크린의 최신 gameState를 가져옴
+                                        if (currentScreen instanceof GameScreen gameScreen) {
+                                            gameState = gameScreen.getGameState();
+                                        } else if (currentScreen instanceof BossScreen bossScreen) {
+                                            gameState = bossScreen.getGameState();
+                                        }
+
+                                        if (gameState.teamAlive()) {
+                                            gameState.nextLevel();
+                                        }
+                                    }
+                                }
+                            }
                         }
-
-                        LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " game screen at " + FPS + " fps.");
-                        returnCode = frame.setScreen(currentScreen); // 1. 스크린을 실제로 실행
-                        LOGGER.info("Closing game screen.");
-
-                        // 2. 게임 도중 메뉴로 나갔을 경우 (Pause -> Backspace)
-                        if (returnCode == 1) {
-                            returnCode = 10;
-                            break;
-                        }
-
-                        // 3. 실행된 스크린의 최신 gameState를 가져옴
-                        if (currentScreen instanceof GameScreen gameScreen) {
-                            gameState = gameScreen.getGameState();
-                        } else if (currentScreen instanceof BossScreen bossScreen) {
-                            // BossScreen.java에도 getGameState()가 구현되어 있어야 합니다.
-                            gameState = bossScreen.getGameState();
-                        }
-                        // ===================================
-
-
-                        if (gameState.teamAlive()) {
-                            gameState.nextLevel();
-                        }
-
-                    } while (gameState.teamAlive() && gameState.getLevel() <= (gameSettings.size() + 1)); // +1은 보스 레벨
+                    } while (gameState.teamAlive()
+                            && gameState.getLevel() <= (gameSettings.size() + 1)
+                            && returnCode != 9
+                            && returnCode != 10);
 
                     LOGGER.info("Starting " + WIDTH + "x" + HEIGHT + " score screen at " + FPS + " fps, with a score of "
                             + gameState.getScore() + ", "
