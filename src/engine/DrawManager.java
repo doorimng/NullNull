@@ -849,17 +849,15 @@ public final class DrawManager {
      * Draws the score (results).
      *
      * @param screen Screen to draw on.
-     * @param score Score obtained.
      * @param coins Coins obtained.
      * @param livesRemaining Lives remaining.
      * @param shipsDestroyed Ships destroyed.
      * @param accuracy Accuracy.
-     * @param isNewRecord If the score is a new high score.
      * @param isFailure True if the player failed (Game Over), False if cleared.
      */
-    public void drawResults(final Screen screen, final int score,
+    public void drawResults(final Screen screen,
                             final int coins, final int livesRemaining, final int shipsDestroyed,
-                            final float accuracy, final boolean isNewRecord, final boolean accuracy1P, final boolean isFailure) { // 파라미터 isFailure 추가됨
+                            final float accuracy, final boolean accuracy1P, final boolean isFailure) { // 파라미터 isFailure 추가됨
         String coinString = String.format("coins %04d", coins);
         String livesRemainingString = String.format("lives remaining %d", livesRemaining);
         String shipsDestroyedString = "enemies destroyed " + shipsDestroyed;
@@ -984,9 +982,6 @@ public final class DrawManager {
         String highScoreString = "High Scores";
         String instructionsString = "Press ESC to return";
 
-        int midX = screen.getWidth() / 2;
-        int startY = screen.getHeight() / 3;
-
         backBufferGraphics.setColor(Color.GREEN);
         drawCenteredBigString(screen, highScoreString, screen.getHeight() / 8);
 
@@ -1003,38 +998,6 @@ public final class DrawManager {
      *
      * @param screen
      * Screen to draw on.
-     * @param highScores
-     * List of high scores.
-     */
-    public void drawHighScores(final Screen screen, final List<Score> highScores, final String mode) { // add mode to parameter
-        backBufferGraphics.setColor(Color.WHITE);
-        int i = 0;
-        String scoreString = "";
-
-        int startY = screen.getHeight() / 3 + fontBigMetrics.getHeight() + 20;
-        int lineHeight = fontRegularMetrics.getHeight() + 5;
-
-        for (Score score : highScores) {
-            // [수정] 시간을 분:초 형식으로 변환
-            int totalSeconds = score.getScore() / 1000;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-
-            // 이름과 시간을 포맷팅 (예: AAA        01:23)
-            scoreString = String.format("%s        %02d:%02d", score.getName(), minutes, seconds);
-
-            int x = screen.getWidth() / 2 - fontRegularMetrics.stringWidth(scoreString) / 2;
-
-            backBufferGraphics.drawString(scoreString, x, startY + lineHeight * i);
-            i++;
-        }
-    }
-
-    /**
-     * Draws high scores.
-     *
-     * @param screen
-     * Screen to draw on.
      * @param completer
      * List of completer
      * [2025-10-09] Added in commit: feat: complete drawAchievementMenu method in DrawManager
@@ -1043,7 +1006,6 @@ public final class DrawManager {
                                     Achievement achievement, List<String> completer) {
         String achievementsTitle = "Achievements";
         String instructionsString = "Press ESC to return";
-        String playerModeString = "              1P                                      2P              ";
         String prevNextString = "PREV                                                              NEXT";
         String achievementName = achievement.getName();
         String descriptionString = achievement.getDescription();
@@ -1054,8 +1016,6 @@ public final class DrawManager {
         drawCenteredRegularString(screen, achievementName, screen.getHeight() / 7);
         backBufferGraphics.setColor(Color.GRAY);
         drawCenteredRegularString(screen, descriptionString, screen.getHeight() / 5);
-        backBufferGraphics.setColor(Color.GREEN);
-        drawCenteredRegularString(screen, playerModeString, (int) (screen.getHeight() / 4));
         backBufferGraphics.setColor(Color.GRAY);
         drawCenteredRegularString(screen, instructionsString, (int) (screen.getHeight() * 0.9));
 
@@ -1063,12 +1023,7 @@ public final class DrawManager {
         int startY = (int) (screen.getHeight() * 0.3);
         int lineHeight = 25;
 
-        // X positions for the 1P and 2P columns
-        int leftX = screen.getWidth() / 4;      // 1P column
-        int rightX = screen.getWidth() * 2 / 3; // 2P column
-
         List<String> team1 = new ArrayList<>();
-        List<String> team2 = new ArrayList<>();
 
         // Separate completers into 1P and 2P teams based on the mode prefix
         if (completer != null && !completer.isEmpty()) {
@@ -1081,24 +1036,14 @@ public final class DrawManager {
                     String name = parts[1].trim();
                     if (mode == 1) {
                         team1.add(name);
-                    } else if (mode == 2) {
-                        team2.add(name);
                     }
                 }
             }
 
-            // Draw names in each column, up to the max number of lines
-            int maxLines = Math.max(team1.size(), team2.size());
-            for (int i = 0; i < maxLines; i++) {
+            for (int i = 0; i < team1.size(); i++) {
                 int y = startY + i * lineHeight;
-                if (i < team1.size()) {
                     backBufferGraphics.setColor(Color.WHITE);
-                    backBufferGraphics.drawString(team1.get(i), leftX, y);
-                }
-                if (i < team2.size()) {
-                    backBufferGraphics.setColor(Color.WHITE);
-                    backBufferGraphics.drawString(team2.get(i), rightX, y);
-                }
+                    drawCenteredRegularString(screen, team1.get(i), y);
             }
 
         } else {
@@ -1680,7 +1625,7 @@ public final class DrawManager {
      * @param positionY
      * Y position for inventory display.
      */
-    public void drawItemInventory(final Screen screen, final ItemInventory inventory,
+    public void drawItemInventory(final ItemInventory inventory,
                                   final int positionX, final int positionY) {
         if (inventory == null) return;
 

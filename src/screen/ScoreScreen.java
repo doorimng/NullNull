@@ -23,8 +23,6 @@ public class ScoreScreen extends Screen {
 
     private final GameState gameState;
 
-    /** Current score. */
-    private int score;
     /** Player lives left. */
     private int livesRemaining;
     /** Current coins. */
@@ -65,7 +63,6 @@ public class ScoreScreen extends Screen {
         super(width, height, fps);
         this.gameState = gameState;
 
-        this.score = gameState.getScore();
         this.livesRemaining = gameState.getLivesRemaining();
         this.coins = gameState.getCoins();
         this.bulletsShot = gameState.getBulletsShot();
@@ -120,8 +117,8 @@ public class ScoreScreen extends Screen {
      */
     protected final void update() {
         super.update();
-
         draw();
+        SoundManager.playOnce("sound/select.wav");
 
         // -------------------------------------------------------
         // [핵심 로직] 키 뗌 확인 (Key Release Check)
@@ -145,14 +142,8 @@ public class ScoreScreen extends Screen {
         // -------------------------------------------------------
         if (!this.isClear) {
             // ESC: 맵으로 나가기 (Core 루프의 시작인 MapScreen으로 이동하기 위해 returnCode 2 반환)
-            if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
-                SoundManager.playOnce("sound/select.wav");
-                this.returnCode = 2; // [요청 2] 1(Title) -> 2(Restart Loop -> MapScreen)
-                this.isRunning = false;
-            }
-            // SPACE: 다시 시작 (같은 스테이지 도전)
-            else if (inputManager.isKeyDown(KeyEvent.VK_SPACE)) {
-                SoundManager.playOnce("sound/select.wav");
+            if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE) ||
+                    (inputManager.isKeyDown(KeyEvent.VK_SPACE))) {
                 this.returnCode = 2; // Restart
                 this.isRunning = false;
             }
@@ -165,7 +156,6 @@ public class ScoreScreen extends Screen {
 
         // ESC 키: 메인 타이틀로 이동 (1번)
         if (inputManager.isKeyDown(KeyEvent.VK_ESCAPE)) {
-            SoundManager.playOnce("sound/select.wav");
             this.returnCode = 1; // Title
             this.isRunning = false;
             if (this.isNewRecord) {
@@ -180,8 +170,6 @@ public class ScoreScreen extends Screen {
                 this.showNameError = true;
                 return;
             }
-
-            SoundManager.playOnce("sound/select.wav");
 
             this.returnCode = 1; // Title
 
@@ -204,11 +192,9 @@ public class ScoreScreen extends Screen {
 
         // 이름 입력 (문자)
         char typedChar = inputManager.getLastCharTyped();
-        if (typedChar != '\0') {
-            if (Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
+        if (typedChar != '\0' && Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
                 this.name.append(Character.toUpperCase(typedChar));
                 this.showNameError = false; // 글자 입력하면 에러 해제
-            }
         }
     }
 
@@ -280,9 +266,9 @@ public class ScoreScreen extends Screen {
 
         if (this.gameState != null && this.gameState.isCoop()) {
             // [2P 모드]
-            drawManager.drawResults(this, this.gameState.getScore(), this.gameState.getCoins(),
+            drawManager.drawResults(this, this.gameState.getCoins(),
                     this.gameState.getLivesRemaining(), this.gameState.getShipsDestroyed(),
-                    0f, this.isNewRecord, false, isFailure);
+                    0f, false, isFailure);
 
             float p1Acc = this.gameState.getBulletsShot(0) > 0 ? (float) this.gameState.getShipsDestroyed(0) / this.gameState.getBulletsShot(0) : 0f;
             float p2Acc = this.gameState.getBulletsShot(1) > 0 ? (float) this.gameState.getShipsDestroyed(1) / this.gameState.getBulletsShot(1) : 0f;
@@ -296,8 +282,8 @@ public class ScoreScreen extends Screen {
         } else {
             // [1P 모드]
             float acc = (this.bulletsShot > 0) ? (float) this.shipsDestroyed / this.bulletsShot : 0f;
-            drawManager.drawResults(this, this.score, this.coins, this.livesRemaining,
-                    this.shipsDestroyed, acc, this.isNewRecord, true, isFailure);
+            drawManager.drawResults(this, this.coins, this.livesRemaining,
+                    this.shipsDestroyed, acc, true, isFailure);
         }
 
         // 4. [이름 입력창] - 성공했을 때만 표시

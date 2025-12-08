@@ -39,8 +39,8 @@ public class PlayScreen extends Screen {
     }
 
     protected final void update() {
-        super.update();
-        draw();
+         super.update();
+         draw();
 
         if (this.selectionCooldown.checkFinished() && this.inputDelay.checkFinished()) {
             if (inputManager.isKeyDown(KeyEvent.VK_UP) || inputManager.isKeyDown(KeyEvent.VK_W)) {
@@ -122,9 +122,9 @@ public class PlayScreen extends Screen {
             }
         }
 
-        drawManager.drawPlayMenu(this, this.menuIndex==2 ? -1 : this.menuIndex, this.menuIndex);
-        drawManager.drawBackButton(this, this.menuIndex==2);
-        drawManager.completeDrawing(this);
+         drawManager.drawPlayMenu(this, this.menuIndex==2 ? -1 : this.menuIndex, this.menuIndex);
+         drawManager.drawBackButton(this, this.menuIndex==2);
+         drawManager.completeDrawing(this);
     }
 
 }
