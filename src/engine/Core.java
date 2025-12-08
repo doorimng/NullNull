@@ -40,7 +40,7 @@ public final class Core {
     private static ConsoleHandler consoleHandler;
     private static int NUM_LEVELS; // Total number of levels
     private static int currentLevel = 1;
-    private static int startLevel = 1;
+    private static int startLevel = 6;
 
     /**
      * Test implementation.
