@@ -96,9 +96,6 @@ public class ScoreScreen extends Screen {
             } catch (IOException e) {
                 logger.warning("Couldn't load high scores!");
             }
-        } else {
-            // 실패 시 무조건 신기록 아님
-            this.isNewRecord = false;
         }
 
         inputManager.clearLastKey();

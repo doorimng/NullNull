@@ -143,7 +143,7 @@ public final class Core {
                                     gameSettings.get(currentLevel - 1),
                                     bonusLife, width, height, FPS, shipTypeP1, shipTypeP2, achievementManager);
 
-                            LOGGER.info("Starting Game Screen Level " + currentLevel);
+                            LOGGER.log(Level.INFO, "Starting Game Screen Level {0}", currentLevel);
 
                         } else {
                             // 모든 레벨과 보스를 클리어함
