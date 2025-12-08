@@ -96,9 +96,6 @@ public class ScoreScreen extends Screen {
             } catch (IOException e) {
                 logger.warning("Couldn't load high scores!");
             }
-        } else {
-            // 실패 시 무조건 신기록 아님
-            this.isNewRecord = false;
         }
 
         inputManager.clearLastKey();
@@ -108,6 +105,7 @@ public class ScoreScreen extends Screen {
      * Starts the action.
      */
     public final int run() {
+        SoundManager.playOnce("sound/select.wav");
         super.run();
         return this.returnCode;
     }
@@ -118,7 +116,6 @@ public class ScoreScreen extends Screen {
     protected final void update() {
         super.update();
         draw();
-        SoundManager.playOnce("sound/select.wav");
 
         // -------------------------------------------------------
         // [핵심 로직] 키 뗌 확인 (Key Release Check)
@@ -193,8 +190,8 @@ public class ScoreScreen extends Screen {
         // 이름 입력 (문자)
         char typedChar = inputManager.getLastCharTyped();
         if (typedChar != '\0' && Character.isLetterOrDigit(typedChar) && this.name.length() < MAX_NAME_LENGTH) {
-                this.name.append(Character.toUpperCase(typedChar));
-                this.showNameError = false; // 글자 입력하면 에러 해제
+            this.name.append(Character.toUpperCase(typedChar));
+            this.showNameError = false; // 글자 입력하면 에러 해제
         }
     }
 
