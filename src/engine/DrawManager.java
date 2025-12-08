@@ -951,7 +951,7 @@ public final class DrawManager {
             helpText = "Press SPACE to Save & Title";
         } else {
             // [실패 시] 재시작 가능
-            helpText = "Press SPACE to Restart, ESC to Map";
+            helpText = "Press SPACE or ESC to Map";
         }
 
         drawCenteredRegularString(screen, helpText,
@@ -1616,7 +1616,6 @@ public final class DrawManager {
      * Draws the item inventory on the game screen.
      * Shows up to 2 active items with their remaining duration.
      *
-     * @param screen
      * Screen to draw on.
      * @param inventory
      * Player's item inventory.
